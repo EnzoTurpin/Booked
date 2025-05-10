@@ -1,10 +1,11 @@
-import express, { Application } from "express";
+import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import appointmentRoutes from "./routes/appointment.routes";
 import userRoutes from "./routes/user.routes";
 import serviceRoutes from "./routes/service.routes";
+import connectDB from "./config/database";
 
 // Configuration
 dotenv.config();
@@ -22,17 +23,17 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/services", serviceRoutes);
 
-// MongoDB Connection
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => {
-    console.log("MongoDB connected successfully");
+// Connect to MongoDB
+connectDB();
 
-    // Start server
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error("MongoDB connection error:", error);
-  });
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (err: Error) => {
+  console.error("Unhandled Rejection:", err.message);
+  // Close server & exit process
+  process.exit(1);
+});

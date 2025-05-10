@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import User, { IUser } from "../models/user.model";
+import User, { IUser } from "../models/User";
 
 // Get all users
 export const getUsers = async (req: Request, res: Response) => {
@@ -42,15 +42,23 @@ export const createUser = async (req: Request, res: Response) => {
       lastName,
       email,
       password, // Note: In a real app, password should be hashed
-      phoneNumber,
+      phone: phoneNumber, // Update field name to match User.ts model
       role,
     });
 
     const savedUser = await newUser.save();
 
-    // Remove password from response
-    const userResponse = savedUser.toObject();
-    delete userResponse.password;
+    // Remove password from response by creating a new object
+    const userResponse = {
+      _id: savedUser._id,
+      firstName: savedUser.firstName,
+      lastName: savedUser.lastName,
+      email: savedUser.email,
+      phone: savedUser.phone,
+      role: savedUser.role,
+      createdAt: savedUser.createdAt,
+      updatedAt: savedUser.updatedAt,
+    };
 
     res.status(201).json(userResponse);
   } catch (error) {
@@ -65,7 +73,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { firstName, lastName, email, phoneNumber, role },
+      { firstName, lastName, email, phone: phoneNumber, role }, // Update field name to match User.ts model
       { new: true }
     ).select("-password");
 

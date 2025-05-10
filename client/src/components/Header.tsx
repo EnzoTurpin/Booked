@@ -7,7 +7,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <div className="text-2xl font-bold">
-            <Link to="/">BookingSystem</Link>
+            <Link to="/">Booked</Link>
           </div>
           <nav>
             <ul className="flex space-x-6">

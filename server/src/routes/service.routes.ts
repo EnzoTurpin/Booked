@@ -1,27 +1,27 @@
 import express from "express";
-import * as serviceController from "../controllers/service.controller";
+import {
+  getServices,
+  getServiceById,
+  getServicesWithProfessionalDetails,
+  getServicesByCategory,
+  getServicesByProfessional,
+  createService,
+  updateService,
+  deleteService,
+} from "../controllers/service.controller";
 
 const router = express.Router();
 
-// GET /api/services - Get all services
-router.get("/", serviceController.getServices);
+// Routes publiques
+router.get("/", getServices);
+router.get("/details", getServicesWithProfessionalDetails);
+router.get("/category/:category", getServicesByCategory);
+router.get("/professional/:professionalId", getServicesByProfessional);
+router.get("/:id", getServiceById);
 
-// GET /api/services/:id - Get service by ID
-router.get("/:id", serviceController.getServiceById);
-
-// GET /api/services/professional/:professionalId - Get services by professional ID
-router.get(
-  "/professional/:professionalId",
-  serviceController.getServicesByProfessional
-);
-
-// POST /api/services - Create new service
-router.post("/", serviceController.createService);
-
-// PUT /api/services/:id - Update service
-router.put("/:id", serviceController.updateService);
-
-// DELETE /api/services/:id - Delete service
-router.delete("/:id", serviceController.deleteService);
+// Routes protégées (ajoutez middleware d'authentification si nécessaire)
+router.post("/", createService);
+router.put("/:id", updateService);
+router.delete("/:id", deleteService);
 
 export default router;

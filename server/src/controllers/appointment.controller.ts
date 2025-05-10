@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import Appointment, { IAppointment } from "../models/appointment.model";
-import Service from "../models/service.model";
+import Appointment, { IAppointment } from "../models/Appointment";
+import Service from "../models/Service";
 
 // Get all appointments
 export const getAppointments = async (req: Request, res: Response) => {
   try {
     const appointments = await Appointment.find()
-      .populate("userId", "firstName lastName email phoneNumber")
-      .populate("professionalId", "firstName lastName")
+      .populate("clientId", "firstName lastName email phone")
+      .populate("professionalId")
       .populate("serviceId");
 
     res.status(200).json(appointments);
@@ -20,8 +20,8 @@ export const getAppointments = async (req: Request, res: Response) => {
 export const getAppointmentById = async (req: Request, res: Response) => {
   try {
     const appointment = await Appointment.findById(req.params.id)
-      .populate("userId", "firstName lastName email phoneNumber")
-      .populate("professionalId", "firstName lastName")
+      .populate("clientId", "firstName lastName email phone")
+      .populate("professionalId")
       .populate("serviceId");
 
     if (!appointment) {
@@ -37,9 +37,9 @@ export const getAppointmentById = async (req: Request, res: Response) => {
 // Get appointments by user ID
 export const getAppointmentsByUserId = async (req: Request, res: Response) => {
   try {
-    const appointments = await Appointment.find({ userId: req.params.userId })
-      .populate("userId", "firstName lastName email phoneNumber")
-      .populate("professionalId", "firstName lastName")
+    const appointments = await Appointment.find({ clientId: req.params.userId })
+      .populate("clientId", "firstName lastName email phone")
+      .populate("professionalId")
       .populate("serviceId");
 
     res.status(200).json(appointments);
@@ -57,8 +57,8 @@ export const getAppointmentsByProfessionalId = async (
     const appointments = await Appointment.find({
       professionalId: req.params.professionalId,
     })
-      .populate("userId", "firstName lastName email phoneNumber")
-      .populate("professionalId", "firstName lastName")
+      .populate("clientId", "firstName lastName email phone")
+      .populate("professionalId")
       .populate("serviceId");
 
     res.status(200).json(appointments);
@@ -70,7 +70,16 @@ export const getAppointmentsByProfessionalId = async (
 // Create new appointment
 export const createAppointment = async (req: Request, res: Response) => {
   try {
-    const { userId, professionalId, serviceId, date, notes } = req.body;
+    const {
+      clientId,
+      professionalId,
+      serviceId,
+      date,
+      startTime,
+      endTime,
+      notes,
+      paymentAmount,
+    } = req.body;
 
     // Check if the service exists
     const service = await Service.findById(serviceId);
@@ -82,7 +91,8 @@ export const createAppointment = async (req: Request, res: Response) => {
     const existingAppointment = await Appointment.findOne({
       professionalId,
       date: new Date(date),
-      status: { $nin: ["cancelled"] },
+      startTime,
+      status: { $nin: ["cancelled", "no-show"] },
     });
 
     if (existingAppointment) {
@@ -92,11 +102,16 @@ export const createAppointment = async (req: Request, res: Response) => {
     }
 
     const newAppointment = new Appointment({
-      userId,
+      clientId,
       professionalId,
       serviceId,
       date,
+      startTime,
+      endTime,
       notes,
+      paymentAmount: paymentAmount || service.price,
+      status: "scheduled",
+      paymentStatus: "pending",
     });
 
     const savedAppointment = await newAppointment.save();
@@ -105,8 +120,8 @@ export const createAppointment = async (req: Request, res: Response) => {
     const populatedAppointment = await Appointment.findById(
       savedAppointment._id
     )
-      .populate("userId", "firstName lastName email phoneNumber")
-      .populate("professionalId", "firstName lastName")
+      .populate("clientId", "firstName lastName email phone")
+      .populate("professionalId")
       .populate("serviceId");
 
     res.status(201).json(populatedAppointment);
@@ -125,8 +140,8 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
       { status },
       { new: true }
     )
-      .populate("userId", "firstName lastName email phoneNumber")
-      .populate("professionalId", "firstName lastName")
+      .populate("clientId", "firstName lastName email phone")
+      .populate("professionalId")
       .populate("serviceId");
 
     if (!updatedAppointment) {
@@ -142,15 +157,23 @@ export const updateAppointmentStatus = async (req: Request, res: Response) => {
 // Update appointment
 export const updateAppointment = async (req: Request, res: Response) => {
   try {
-    const { date, notes, status } = req.body;
+    const {
+      date,
+      startTime,
+      endTime,
+      notes,
+      status,
+      paymentStatus,
+      paymentAmount,
+    } = req.body;
 
     const updatedAppointment = await Appointment.findByIdAndUpdate(
       req.params.id,
-      { date, notes, status },
+      { date, startTime, endTime, notes, status, paymentStatus, paymentAmount },
       { new: true }
     )
-      .populate("userId", "firstName lastName email phoneNumber")
-      .populate("professionalId", "firstName lastName")
+      .populate("clientId", "firstName lastName email phone")
+      .populate("professionalId")
       .populate("serviceId");
 
     if (!updatedAppointment) {
