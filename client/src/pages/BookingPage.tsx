@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
 import axios from "axios";
+import CustomSelect from "../components/CustomSelect";
 
 interface Service {
   _id: string;
@@ -143,65 +144,63 @@ const BookingPage: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8 text-center">
+      <h1 className="text-3xl font-bold mb-8 text-center text-brown">
         Prendre rendez-vous
       </h1>
 
-      <div className="bg-white rounded-lg shadow-md p-8">
+      <div className="bg-offwhite rounded-lg shadow-md p-8 border border-sage/20">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Sélection du service */}
           <div>
             <label
               htmlFor="service"
-              className="block text-gray-700 font-semibold mb-2"
+              className="block text-brown font-semibold mb-2"
             >
               Service
             </label>
-            <select
+            <CustomSelect
               id="service"
+              name="service"
               value={selectedService}
-              onChange={(e) => setSelectedService(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              onChange={setSelectedService}
+              options={services.map((service) => ({
+                value: service._id,
+                label: `${service.name} - ${service.duration} min - ${service.price} €`,
+              }))}
+              placeholder="Sélectionnez un service"
               required
-            >
-              <option value="">Sélectionnez un service</option>
-              {services.map((service) => (
-                <option key={service._id} value={service._id}>
-                  {service.name} - {service.duration} min - {service.price} €
-                </option>
-              ))}
-            </select>
+              className="w-full"
+            />
           </div>
 
           {/* Sélection du professionnel */}
           <div>
             <label
               htmlFor="professional"
-              className="block text-gray-700 font-semibold mb-2"
+              className="block text-brown font-semibold mb-2"
             >
               Professionnel
             </label>
-            <select
+            <CustomSelect
               id="professional"
+              name="professional"
               value={selectedProfessional}
-              onChange={(e) => setSelectedProfessional(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              onChange={setSelectedProfessional}
+              options={professionals.map((pro) => ({
+                value: pro._id,
+                label: `${pro.firstName} ${pro.lastName}`,
+              }))}
+              placeholder="Sélectionnez un professionnel"
               required
-            >
-              <option value="">Sélectionnez un professionnel</option>
-              {professionals.map((pro) => (
-                <option key={pro._id} value={pro._id}>
-                  {pro.firstName} {pro.lastName}
-                </option>
-              ))}
-            </select>
+              className="w-full"
+            />
           </div>
 
           {/* Sélection de la date */}
           <div>
             <label
               htmlFor="date"
-              className="block text-gray-700 font-semibold mb-2"
+              className="block text-brown font-semibold mb-2"
             >
               Date
             </label>
@@ -211,9 +210,18 @@ const BookingPage: React.FC = () => {
               dateFormat="dd/MM/yyyy"
               minDate={new Date()}
               locale={fr}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-sage/30 rounded-lg focus:ring-sage focus:border-sage bg-offwhite text-brown"
               placeholderText="Sélectionnez une date"
               required
+              showMonthDropdown
+              showYearDropdown
+              dropdownMode="select"
+              todayButton="Aujourd'hui"
+              previousMonthButtonLabel="Mois précédent"
+              nextMonthButtonLabel="Mois suivant"
+              ariaLabelledBy="date"
+              inline={false}
+              fixedHeight
             />
           </div>
 
@@ -222,31 +230,30 @@ const BookingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="time"
-                className="block text-gray-700 font-semibold mb-2"
+                className="block text-brown font-semibold mb-2"
               >
                 Heure
               </label>
-              <select
+              <CustomSelect
                 id="time"
+                name="time"
                 value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                onChange={setSelectedTime}
+                options={availableTimes.map((time) => ({
+                  value: time,
+                  label: time,
+                }))}
+                placeholder="Sélectionnez une heure"
                 required
-              >
-                <option value="">Sélectionnez une heure</option>
-                {availableTimes.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
+                className="w-full"
+              />
             </div>
           )}
 
           {/* Bouton de soumission */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
+            className="w-full bg-sage hover:bg-sage-light text-brown font-bold py-3 px-6 rounded-lg transition duration-300"
             disabled={
               !selectedService ||
               !selectedProfessional ||

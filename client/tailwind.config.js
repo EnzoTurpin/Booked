@@ -4,6 +4,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        sage: "#A8B9A3",
+        "sage-light": "#C5D1C0",
+        "sage-dark": "#7A8C75",
+        beige: "#F5F0E3",
+        offwhite: "#FAFAF8",
+        brown: "#5D4037",
+        "brown-light": "#7D5B50",
         blue: {
           50: "#ebf5ff",
           100: "#e1effe",

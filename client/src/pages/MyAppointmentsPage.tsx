@@ -161,8 +161,8 @@ const MyAppointmentsPage: React.FC = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement de vos rendez-vous...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage mx-auto"></div>
+          <p className="mt-4 text-brown/80">Chargement de vos rendez-vous...</p>
         </div>
       </div>
     );
@@ -170,16 +170,18 @@ const MyAppointmentsPage: React.FC = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8 text-center">Mes Rendez-vous</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center text-brown">
+        Mes Rendez-vous
+      </h1>
 
       {appointments.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-gray-600">
+          <p className="text-brown/80">
             Vous n'avez pas encore de rendez-vous.
           </p>
           <a
             href="/booking"
-            className="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-lg"
+            className="mt-4 inline-block bg-sage text-brown px-6 py-2 rounded-lg hover:bg-sage-light transition-colors"
           >
             Prendre rendez-vous
           </a>
@@ -189,15 +191,15 @@ const MyAppointmentsPage: React.FC = () => {
           {appointments.map((appointment) => (
             <div
               key={appointment._id}
-              className="bg-white rounded-lg shadow-md overflow-hidden"
+              className="bg-offwhite rounded-lg shadow-md overflow-hidden border border-sage/20"
             >
               <div className="p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-xl font-bold text-blue-700">
+                    <h2 className="text-xl font-bold text-brown">
                       {appointment.service.name}
                     </h2>
-                    <p className="text-gray-600 mt-1">
+                    <p className="text-brown/80 mt-1">
                       avec {appointment.professional.firstName}{" "}
                       {appointment.professional.lastName}
                     </p>
@@ -211,10 +213,10 @@ const MyAppointmentsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center text-gray-700">
+                <div className="mt-4 flex items-center text-brown/80">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
+                    className="h-5 w-5 mr-2 text-sage"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -232,10 +234,10 @@ const MyAppointmentsPage: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="mt-2 flex items-center text-gray-700">
+                <div className="mt-2 flex items-center text-brown/80">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
+                    className="h-5 w-5 mr-2 text-sage"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -250,10 +252,10 @@ const MyAppointmentsPage: React.FC = () => {
                   <span>{appointment.service.duration} minutes</span>
                 </div>
 
-                <div className="mt-2 flex items-center text-gray-700">
+                <div className="mt-2 flex items-center text-brown/80">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
+                    className="h-5 w-5 mr-2 text-sage"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

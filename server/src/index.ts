@@ -5,7 +5,9 @@ import dotenv from "dotenv";
 import appointmentRoutes from "./routes/appointment.routes";
 import userRoutes from "./routes/user.routes";
 import serviceRoutes from "./routes/service.routes";
+import authRoutes from "./routes/auth.routes";
 import connectDB from "./config/database";
+import path from "path";
 
 // Configuration
 dotenv.config();
@@ -18,10 +20,14 @@ const MONGODB_URI =
 app.use(cors());
 app.use(express.json());
 
+// Servir les fichiers statiques du dossier uploads
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 // Routes
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/services", serviceRoutes);
+app.use("/api/auth", authRoutes);
 
 // Connect to MongoDB
 connectDB();

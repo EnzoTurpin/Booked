@@ -9,6 +9,11 @@ export interface IUser extends Document {
   role: "client" | "professional" | "admin";
   phone?: string;
   profileImage?: string;
+  isEmailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -33,6 +38,11 @@ const userSchema = new Schema<IUser>(
     },
     phone: { type: String, trim: true },
     profileImage: { type: String },
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationToken: { type: String },
+    emailVerificationExpires: { type: Date },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 );

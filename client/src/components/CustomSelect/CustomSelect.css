@@ -1,0 +1,121 @@
+/* Conteneur principal du select personnalisé */
+.custom-select-container {
+  position: relative;
+  width: 100%;
+  font-family: inherit;
+}
+
+/* Style du select visible */
+.custom-select-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: var(--color-offwhite);
+  border: 1px solid rgba(168, 185, 163, 0.3);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  color: var(--color-brown);
+  user-select: none;
+  transition: border-color 0.2s ease;
+}
+
+.custom-select-header:hover {
+  border-color: var(--color-sage);
+}
+
+.custom-select-header.focused {
+  outline: none;
+  border-color: var(--color-sage);
+  box-shadow: 0 0 0 2px rgba(168, 185, 163, 0.3);
+}
+
+/* Texte du select */
+.custom-select-selected-value {
+  flex-grow: 1;
+  text-align: left;
+}
+
+/* Flèche du select */
+.custom-select-arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--color-brown);
+  margin-left: 10px;
+  transition: transform 0.2s ease;
+}
+
+.custom-select-header.open .custom-select-arrow {
+  transform: rotate(180deg);
+}
+
+/* Liste déroulante */
+.custom-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--color-offwhite);
+  border: 1px solid rgba(168, 185, 163, 0.3);
+  border-radius: 0 0 0.5rem 0.5rem;
+  margin-top: 2px;
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.custom-select-dropdown.open {
+  display: block;
+}
+
+/* Options */
+.custom-select-option {
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.custom-select-option:hover {
+  background-color: var(--color-sage-light);
+  color: var(--color-brown);
+}
+
+.custom-select-option.selected {
+  background-color: var(--color-sage);
+  color: var(--color-offwhite);
+}
+
+/* Style au focus pour l'accessibilité */
+.custom-select-container:focus-within .custom-select-header {
+  border-color: var(--color-sage);
+  box-shadow: 0 0 0 2px rgba(168, 185, 163, 0.3);
+}
+
+/* Pour ressembler au select natif sur Safari et Firefox */
+@supports (-webkit-appearance: none) or (-moz-appearance: none) {
+  .custom-select-dropdown {
+    border-top: none;
+  }
+
+  .custom-select-option {
+    font-size: inherit;
+  }
+}
+
+/* Styles pour la scrollbar */
+.custom-select-dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-select-dropdown::-webkit-scrollbar-track {
+  background-color: var(--color-offwhite);
+}
+
+.custom-select-dropdown::-webkit-scrollbar-thumb {
+  background-color: var(--color-sage);
+  border-radius: 4px;
+}

@@ -16,24 +16,24 @@ const ClockIcon = createIconComponent(FaClock, 30);
 
 const HomePage: React.FC = () => {
   return (
-    <div className="flex flex-col space-y-16 bg-gradient-to-b from-gray-50 to-white min-h-screen">
+    <div className="flex flex-col space-y-16 bg-beige min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-b-3xl shadow-xl overflow-hidden pt-16 pb-20 px-4">
+      <section className="bg-sage-dark text-offwhite rounded-b-3xl shadow-xl overflow-hidden pt-16 pb-20 px-4">
         <div className="max-w-5xl mx-auto relative z-10">
-          <div className="absolute top-0 left-0 w-full h-full bg-pattern opacity-10 z-0"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-pattern opacity-20 z-0"></div>
           <div className="text-center relative z-10">
             <h1 className="text-4xl md:text-6xl font-extrabold mb-8 leading-tight animate-fade-in">
               Réservez vos rendez-vous <br className="hidden md:block" />
-              <span className="text-blue-200">en quelques clics</span>
+              <span className="text-beige">en quelques clics</span>
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-10 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-offwhite/90 mb-10 max-w-3xl mx-auto leading-relaxed">
               Simple, rapide et efficace. Notre plateforme vous permet de gérer
               facilement tous vos rendez-vous.
             </p>
             <div className="flex flex-wrap justify-center gap-6">
               <Link
                 to="/booking"
-                className="group bg-white text-blue-700 font-bold py-4 px-8 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition duration-300 flex items-center gap-2"
+                className="group bg-offwhite text-brown font-bold py-4 px-8 rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-1 transition duration-300 flex items-center gap-2"
               >
                 Prendre rendez-vous
                 {FaArrowRight({
@@ -43,76 +43,76 @@ const HomePage: React.FC = () => {
               </Link>
               <Link
                 to="/services"
-                className="bg-blue-800 bg-opacity-40 hover:bg-opacity-60 text-white font-bold py-4 px-8 rounded-xl border border-blue-300 border-opacity-30 backdrop-blur-sm transition duration-300"
+                className="bg-brown text-offwhite font-bold py-4 px-8 rounded-xl border border-offwhite/20 backdrop-blur-sm transition duration-300 hover:bg-brown-light"
               >
                 Voir nos services
               </Link>
             </div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white opacity-10"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-beige opacity-20"></div>
       </section>
 
       {/* Features Section */}
       <section className="py-16 px-4 max-w-6xl mx-auto w-full">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-gray-800">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-brown">
           Comment ça marche
         </h2>
-        <p className="text-gray-600 text-center max-w-2xl mx-auto mb-16 text-lg">
+        <p className="text-brown/80 text-center max-w-2xl mx-auto mb-16 text-lg">
           Trois étapes simples pour réserver votre prochain rendez-vous
         </p>
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-          <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative">
+          <div className="bg-offwhite p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-sage/20 relative">
             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-              <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-md">
-                <span className="text-white">
+              <div className="flex items-center justify-center w-16 h-16 bg-sage-dark rounded-full shadow-md">
+                <span className="text-offwhite">
                   <UserIcon />
                 </span>
               </div>
             </div>
             <div className="mt-8 text-center">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">
+              <h3 className="text-xl font-bold mb-4 text-brown">
                 Créez votre compte
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-brown/80 leading-relaxed">
                 Inscrivez-vous en quelques secondes pour accéder à toutes les
                 fonctionnalités de réservation.
               </p>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative">
+          <div className="bg-offwhite p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-sage/20 relative">
             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-              <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-md">
-                <span className="text-white">
+              <div className="flex items-center justify-center w-16 h-16 bg-sage-dark rounded-full shadow-md">
+                <span className="text-offwhite">
                   <CalendarIcon />
                 </span>
               </div>
             </div>
             <div className="mt-8 text-center">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">
+              <h3 className="text-xl font-bold mb-4 text-brown">
                 Choisissez une date
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-brown/80 leading-relaxed">
                 Sélectionnez le service et la date qui vous conviennent dans
                 notre calendrier interactif.
               </p>
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 relative">
+          <div className="bg-offwhite p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-sage/20 relative">
             <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-              <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full shadow-md">
-                <span className="text-white">
+              <div className="flex items-center justify-center w-16 h-16 bg-sage-dark rounded-full shadow-md">
+                <span className="text-offwhite">
                   <ClockIcon />
                 </span>
               </div>
             </div>
             <div className="mt-8 text-center">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">
+              <h3 className="text-xl font-bold mb-4 text-brown">
                 Confirmez votre réservation
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-brown/80 leading-relaxed">
                 Validez votre rendez-vous et recevez une confirmation
                 instantanée par email.
               </p>
@@ -122,19 +122,19 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-2xl p-12 mx-4 md:mx-auto max-w-5xl shadow-xl transform hover:scale-[1.01] transition-transform duration-300 mb-20">
+      <section className="bg-brown text-offwhite rounded-2xl p-12 mx-4 md:mx-auto max-w-5xl shadow-xl transform hover:scale-[1.01] transition-transform duration-300 mb-20">
         <div className="relative z-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center">
             Prêt à commencer ?
           </h2>
-          <p className="text-xl mb-8 text-center max-w-2xl mx-auto text-indigo-100">
+          <p className="text-xl mb-8 text-center max-w-2xl mx-auto text-beige">
             Réservez votre premier rendez-vous dès maintenant et découvrez la
             simplicité de notre plateforme.
           </p>
           <div className="flex justify-center">
             <Link
               to="/register"
-              className="bg-white text-indigo-700 hover:bg-indigo-50 font-bold py-4 px-10 rounded-xl shadow-md transition duration-300 inline-flex items-center gap-2 text-lg"
+              className="bg-sage-dark text-offwhite hover:bg-sage font-bold py-4 px-10 rounded-xl shadow-md transition duration-300 inline-flex items-center gap-2 text-lg"
             >
               S'inscrire gratuitement
               {FaArrowRight({ className: "text-sm" })}
