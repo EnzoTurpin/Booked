@@ -140,7 +140,7 @@ const ServicesPage: React.FC = () => {
 
                   <Link
                     to={`/booking?service=${service._id}`}
-                    className="mt-6 block w-full bg-sage hover:bg-sage-light text-brown text-center font-bold py-3 px-4 rounded-xl shadow-md transition duration-300 flex items-center justify-center gap-2 group"
+                    className="mt-6 w-full bg-sage hover:bg-sage-light text-brown text-center font-bold py-3 px-4 rounded-xl shadow-md transition duration-300 flex items-center justify-center gap-2 group"
                   >
                     <span>Réserver maintenant</span>
                     <span className="group-hover:translate-x-1 transition-transform duration-300">

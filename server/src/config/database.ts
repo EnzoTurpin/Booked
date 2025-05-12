@@ -9,26 +9,35 @@ const MONGODB_URI =
 export const connectDB = async (): Promise<void> => {
   try {
     await mongoose.connect(MONGODB_URI);
-    console.log("📦 MongoDB connected successfully");
+    // Ce message sera remplacé par celui dans index.ts
 
     // Log connection events
     mongoose.connection.on("error", (err) => {
-      console.error("MongoDB connection error:", err);
+      console.error(
+        "\x1b[31m%s\x1b[0m",
+        `❌ Erreur de connexion MongoDB: ${err}`
+      );
     });
 
     mongoose.connection.on("disconnected", () => {
-      console.log("MongoDB disconnected");
+      console.log("\x1b[33m%s\x1b[0m", "🔌 MongoDB déconnecté");
     });
 
     // Handle graceful shutdown
     process.on("SIGINT", async () => {
       await mongoose.connection.close();
-      console.log("MongoDB connection closed due to app termination");
+      console.log(
+        "\x1b[36m%s\x1b[0m",
+        "👋 Connexion MongoDB fermée suite à l'arrêt de l'application"
+      );
       process.exit(0);
     });
   } catch (error) {
-    console.error("Failed to connect to MongoDB:", error);
-    process.exit(1);
+    console.error(
+      "\x1b[31m%s\x1b[0m",
+      `❌ Échec de connexion à MongoDB: ${error}`
+    );
+    throw error; // Propagate the error to be caught in index.ts
   }
 };
 

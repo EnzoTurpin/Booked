@@ -68,7 +68,7 @@ const RegisterPage: React.FC = () => {
       const hasLowerCase = /[a-z]/.test(formData.password);
       const hasUpperCase = /[A-Z]/.test(formData.password);
       const hasNumber = /[0-9]/.test(formData.password);
-      const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
+      const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(
         formData.password
       );
 
@@ -127,7 +127,7 @@ const RegisterPage: React.FC = () => {
       };
 
       // Appel au service d'authentification pour l'inscription
-      const response = await authService.register(userData);
+      await authService.register(userData);
 
       // Rediriger vers la page de vérification d'email
       navigate(`/verify-email?email=${encodeURIComponent(formData.email)}`);

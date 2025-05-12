@@ -1,0 +1,13 @@
+{
+  "colours": true,
+  "events": {
+    "restart": "node src/scripts/server-start.js",
+    "start": "node src/scripts/server-start.js"
+  },
+  "restartable": "rs",
+  "verbose": true,
+  "watch": ["src"],
+  "ext": "ts,js,json",
+  "ignore": ["src/**/*.spec.ts"],
+  "exec": "ts-node src/index.ts"
+}
