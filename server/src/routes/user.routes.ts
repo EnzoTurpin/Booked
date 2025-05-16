@@ -7,13 +7,31 @@ import {
   deleteUser,
   verifyEmail,
   resendVerificationCode,
+  getAllUsers,
+  banUser,
+  unbanUser,
+  adminUpdateUser,
 } from "../controllers/user.controller";
-import { authenticateJWT } from "../middleware/auth.middleware";
+import { authenticateJWT, isAdmin } from "../middleware/auth.middleware";
 import { changePassword } from "../controllers/auth.controller";
 import { profileImageUpload } from "../middleware/upload.middleware";
 
 const router = express.Router();
 
+// Admin routes
+// GET /api/users/admin - Get all users (admin only)
+router.get("/admin", authenticateJWT, isAdmin, getAllUsers);
+
+// POST /api/users/:id/ban - Ban a user (admin only)
+router.post("/:id/ban", authenticateJWT, isAdmin, banUser);
+
+// POST /api/users/:id/unban - Unban a user (admin only)
+router.post("/:id/unban", authenticateJWT, isAdmin, unbanUser);
+
+// PUT /api/users/admin/:id - Update user by admin (admin only)
+router.put("/admin/:id", authenticateJWT, isAdmin, adminUpdateUser);
+
+// Regular routes
 // GET /api/users - Get all users
 router.get("/", getUsers);
 
@@ -27,7 +45,7 @@ router.post("/", createUser);
 router.put("/:id", authenticateJWT, profileImageUpload, updateUser);
 
 // DELETE /api/users/:id - Delete user
-router.delete("/:id", deleteUser);
+router.delete("/:id", authenticateJWT, isAdmin, deleteUser);
 
 // POST /api/users/verify-email - Verify email
 router.post("/verify-email", verifyEmail);

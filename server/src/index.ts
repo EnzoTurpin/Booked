@@ -6,6 +6,8 @@ import appointmentRoutes from "./routes/appointment.routes";
 import userRoutes from "./routes/user.routes";
 import serviceRoutes from "./routes/service.routes";
 import authRoutes from "./routes/auth.routes";
+import contactRoutes from "./routes/contact.routes";
+import unbanRequestRoutes from "./routes/unbanRequest.routes";
 import connectDB from "./config/database";
 import path from "path";
 
@@ -28,6 +30,8 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/unban-requests", unbanRequestRoutes);
 
 // Connect to MongoDB
 connectDB()

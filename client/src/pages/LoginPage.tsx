@@ -105,6 +105,12 @@ const LoginPage: React.FC = () => {
     } catch (error: any) {
       console.error("Erreur de connexion:", error);
 
+      // Vérifier si l'utilisateur est banni
+      if (error.isBanned) {
+        navigate("/banned");
+        return;
+      }
+
       // Vérifier si l'erreur concerne la vérification d'email
       if (error.needsVerification) {
         // Rediriger vers la page de vérification d'email

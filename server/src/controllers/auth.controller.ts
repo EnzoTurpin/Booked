@@ -38,6 +38,15 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    // Vérifier si l'utilisateur est banni
+    if (user.isBanned) {
+      return res.status(403).json({
+        message:
+          "Votre compte a été suspendu. Veuillez contacter l'administration pour plus d'informations.",
+        isBanned: true,
+      });
+    }
+
     // Créer le token JWT
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
@@ -54,6 +63,7 @@ export const login = async (req: Request, res: Response) => {
       phone: user.phone,
       role: user.role,
       isEmailVerified: user.isEmailVerified,
+      profileImage: user.profileImage,
     };
 
     res.status(200).json({

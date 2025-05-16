@@ -309,3 +309,102 @@ export const resendVerificationCode = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+// Admin Routes
+
+// Get all users - Admin only
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await User.find().select("-password");
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Ban user - Admin only
+export const banUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Don't allow banning admins
+    if (user.role === "admin") {
+      return res
+        .status(403)
+        .json({ message: "Impossible de bannir un administrateur" });
+    }
+
+    user.isBanned = true;
+    await user.save();
+
+    res.status(200).json({ message: "Utilisateur banni avec succès" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Unban user - Admin only
+export const unbanUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    user.isBanned = false;
+    await user.save();
+
+    res.status(200).json({ message: "Utilisateur débanni avec succès" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Update user by admin - Admin only
+export const adminUpdateUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const { firstName, lastName, email, phone, role } = req.body;
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Prevent changing own role if admin (for security)
+    const adminId = (req as any).userId;
+    if (userId === adminId && role && role !== user.role) {
+      return res.status(403).json({
+        message: "Vous ne pouvez pas changer votre propre rôle",
+      });
+    }
+
+    // Update fields
+    const updateData: any = {};
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+    if (role) updateData.role = role;
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    }).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    res.status(200).json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+};

@@ -54,6 +54,11 @@ const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
     setIsOpen(false);
   };
 
+  const handleAdminDashboardClick = () => {
+    navigate("/admin");
+    setIsOpen(false);
+  };
+
   return (
     <div className="relative" ref={menuRef}>
       <div onClick={() => setIsOpen(!isOpen)}>
@@ -84,6 +89,14 @@ const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
           >
             Mes rendez-vous
           </button>
+          {user.role === "admin" && (
+            <button
+              onClick={handleAdminDashboardClick}
+              className="block w-full text-left px-4 py-2 text-sm text-brown hover:bg-beige"
+            >
+              Tableau de bord admin
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="block w-full text-left px-4 py-2 text-sm text-brown hover:bg-beige"

@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import authService from "../../services/auth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -9,6 +10,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
+  const currentUser = authService.getCurrentUser();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -31,7 +33,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Afficher le contenu protégé si authentifié
+  // Rediriger vers la page de bannissement si l'utilisateur est banni
+  if (currentUser?.isBanned) {
+    return <Navigate to="/banned" replace />;
+  }
+
+  // Afficher le contenu protégé si authentifié et non banni
   return <>{children}</>;
 };
 

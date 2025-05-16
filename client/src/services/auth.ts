@@ -1,4 +1,5 @@
 import axios from "axios";
+import http from "./http";
 
 const API_URL = "http://localhost:5000/api";
 
@@ -30,6 +31,7 @@ export interface IUser {
   role: string;
   isEmailVerified: boolean;
   profileImage?: string;
+  isBanned?: boolean;
 }
 
 export interface IRegistrationResponse {
@@ -93,6 +95,27 @@ const authService = {
       return response.data;
     } catch (error: any) {
       console.error("Erreur lors de la connexion:", error);
+
+      // Si l'utilisateur est banni, mettre à jour les informations dans le localStorage
+      if (error.response?.status === 403 && error.response.data?.isBanned) {
+        // Créer un utilisateur banni avec les informations disponibles
+        const bannedUserEmail = credentials.email;
+        const bannedUser = {
+          _id: "banned", // ID temporaire
+          email: bannedUserEmail,
+          firstName: "",
+          lastName: "",
+          phone: "",
+          role: "user",
+          isEmailVerified: true,
+          isBanned: true,
+        };
+        localStorage.setItem("user", JSON.stringify(bannedUser));
+
+        // Rediriger vers la page "Banni"
+        window.location.href = "/banned";
+      }
+
       throw (
         error.response?.data || { message: "Email ou mot de passe incorrect" }
       );
@@ -276,6 +299,19 @@ const authService = {
           message: "Erreur lors de la mise à jour du profil",
         }
       );
+    }
+  },
+
+  // Vérifier l'état de l'authentification actuel
+  checkAuthStatus: async (): Promise<IUser> => {
+    try {
+      const response = await http.get("/auth/check");
+      // Mettre à jour les données utilisateur dans le localStorage
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      return response.data.user;
+    } catch (error: any) {
+      authService.logout();
+      throw error.response?.data || { message: "Non authentifié" };
     }
   },
 };

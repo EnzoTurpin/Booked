@@ -16,7 +16,7 @@ interface AuthContextType {
     password: string
   ) => Promise<{ token: string; user: IUser }>;
   logout: () => void;
-  checkAuth: () => void;
+  checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,13 +30,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const checkAuth = () => {
+  const checkAuth = async () => {
     const tokenExists = authService.isLoggedIn();
-    setIsAuthenticated(tokenExists);
-
     if (tokenExists) {
-      setUser(authService.getCurrentUser());
+      try {
+        // Vérifier les informations de l'utilisateur côté serveur
+        const userData = await authService.checkAuthStatus();
+        setUser(userData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        // En cas d'erreur, déconnecter l'utilisateur
+        console.error("Erreur lors de la vérification du statut:", error);
+        authService.logout();
+        setIsAuthenticated(false);
+        setUser(null);
+      }
     } else {
+      setIsAuthenticated(false);
       setUser(null);
     }
 
@@ -56,14 +66,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     window.addEventListener("storage", handleStorageChange);
 
+    // Vérifier l'état de l'utilisateur périodiquement (toutes les minutes)
+    const interval = setInterval(() => {
+      if (isAuthenticated) {
+        checkAuth();
+      }
+    }, 60000);
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const login = async (email: string, password: string) => {
     const response = await authService.login({ email, password });
-    checkAuth();
+    await checkAuth();
     return response;
   };
 
