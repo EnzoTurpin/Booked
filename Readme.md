@@ -54,7 +54,16 @@ L'application permettra à ces professionnels de digitaliser leur système de r�
   - Annulation de rendez-vous
   - Rappels automatiques
 
-## 3. Choix des Technologies
+## 3. Wireframe
+
+![Maquette du site ](image/homepage.png)
+![Maquette du site ](image/reservation.png)
+
+## 4. MCD de la BDD
+
+![MCD ](image/BDD.png)
+
+## 5. Choix des Technologies
 
 ### Frontend
 
@@ -111,8 +120,14 @@ L'application permettra à ces professionnels de digitaliser leur système de r�
    - Configurer les variables nécessaires (connexion MongoDB, clés JWT, etc.)
 
 4. **Lancement de l'application en développement**
+
    ```
    # À la racine du projet
    npm run dev
    ```
+
    Cette commande lancera simultanément le serveur backend et l'application frontend.
+
+5. ## Auteurs
+   Enzo TURPIN &
+   Daryl MATRO
