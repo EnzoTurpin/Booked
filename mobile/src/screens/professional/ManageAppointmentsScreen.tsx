@@ -7,11 +7,13 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import apiService from "../../services/api";
 import Toast from "react-native-toast-message";
 import { ManageAppointmentsScreenProps } from "../../types/navigation";
+import { useRoute, RouteProp } from "@react-navigation/native";
+import { TabNavigatorParamList } from "../../types/navigation";
+import SafeAreaWrapper from "../../components/SafeAreaWrapper";
 
 interface Appointment {
   _id: string;
@@ -29,13 +31,24 @@ interface Appointment {
 }
 
 const ManageAppointmentsScreen = () => {
+  const route =
+    useRoute<RouteProp<TabNavigatorParamList, "ManageAppointmentsTab">>();
+  const initialFilter = route.params?.filter || "all";
+
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
+  const [selectedFilter, setSelectedFilter] = useState<string>(initialFilter);
 
   useEffect(() => {
     fetchAppointments();
   }, []);
+
+  // Si le filtre change dans les paramètres de route, mettre à jour le filtre sélectionné
+  useEffect(() => {
+    if (route.params?.filter) {
+      setSelectedFilter(route.params.filter);
+    }
+  }, [route.params]);
 
   const fetchAppointments = async () => {
     try {
@@ -236,105 +249,112 @@ const ManageAppointmentsScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Mes Rendez-vous</Text>
+    <SafeAreaWrapper bottomTabBarHeight={50}>
+      <View style={styles.container}>
+        <Text style={styles.header}>Gérer vos rendez-vous</Text>
 
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            selectedFilter === "all" && styles.activeFilter,
-          ]}
-          onPress={() => setSelectedFilter("all")}
-        >
-          <Text
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
             style={[
-              styles.filterText,
-              selectedFilter === "all" && styles.activeFilterText,
+              styles.filterButton,
+              selectedFilter === "all" && styles.activeFilter,
             ]}
+            onPress={() => setSelectedFilter("all")}
           >
-            Tous
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            selectedFilter === "pending" && styles.activeFilter,
-          ]}
-          onPress={() => setSelectedFilter("pending")}
-        >
-          <Text
+            <Text
+              style={[
+                styles.filterText,
+                selectedFilter === "all" && styles.activeFilterText,
+              ]}
+            >
+              Tous
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[
-              styles.filterText,
-              selectedFilter === "pending" && styles.activeFilterText,
+              styles.filterButton,
+              selectedFilter === "pending" && styles.activeFilter,
             ]}
+            onPress={() => setSelectedFilter("pending")}
           >
-            En attente
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            selectedFilter === "confirmed" && styles.activeFilter,
-          ]}
-          onPress={() => setSelectedFilter("confirmed")}
-        >
-          <Text
+            <Text
+              style={[
+                styles.filterText,
+                selectedFilter === "pending" && styles.activeFilterText,
+              ]}
+            >
+              En attente
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[
-              styles.filterText,
-              selectedFilter === "confirmed" && styles.activeFilterText,
+              styles.filterButton,
+              selectedFilter === "confirmed" && styles.activeFilter,
             ]}
+            onPress={() => setSelectedFilter("confirmed")}
           >
-            Confirmés
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            selectedFilter === "completed" && styles.activeFilter,
-          ]}
-          onPress={() => setSelectedFilter("completed")}
-        >
-          <Text
+            <Text
+              style={[
+                styles.filterText,
+                selectedFilter === "confirmed" && styles.activeFilterText,
+              ]}
+            >
+              Confirmés
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[
-              styles.filterText,
-              selectedFilter === "completed" && styles.activeFilterText,
+              styles.filterButton,
+              selectedFilter === "completed" && styles.activeFilter,
             ]}
+            onPress={() => setSelectedFilter("completed")}
           >
-            Terminés
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <ActivityIndicator size="large" color="#A8B9A3" style={styles.loader} />
-      ) : filteredAppointments.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="calendar-outline" size={48} color="#ccc" />
-          <Text style={styles.emptyText}>Aucun rendez-vous trouvé</Text>
+            <Text
+              style={[
+                styles.filterText,
+                selectedFilter === "completed" && styles.activeFilterText,
+              ]}
+            >
+              Terminés
+            </Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={filteredAppointments}
-          keyExtractor={(item) => item._id}
-          renderItem={renderAppointmentItem}
-          contentContainerStyle={styles.listContainer}
-        />
-      )}
-    </SafeAreaView>
+
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#A8B9A3"
+            style={styles.loader}
+          />
+        ) : filteredAppointments.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="calendar-outline" size={48} color="#ccc" />
+            <Text style={styles.emptyText}>Aucun rendez-vous trouvé</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredAppointments}
+            keyExtractor={(item) => item._id}
+            renderItem={renderAppointmentItem}
+            contentContainerStyle={styles.listContainer}
+          />
+        )}
+      </View>
+    </SafeAreaWrapper>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFF",
+    backgroundColor: "#F5F0E3",
   },
   header: {
     fontSize: 20,
     fontWeight: "bold",
     padding: 16,
     textAlign: "center",
+    color: "#5D4037",
   },
   filterContainer: {
     flexDirection: "row",
@@ -370,11 +390,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#F5F0E3",
   },
   emptyText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#666",
+    color: "#8D7B68",
   },
   listContainer: {
     padding: 16,

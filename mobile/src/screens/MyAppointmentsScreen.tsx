@@ -1,5 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  View,
+} from "react-native";
 import StyledText from "../components/StyledText";
 import StyledView from "../components/StyledView";
 import { format } from "date-fns";
@@ -54,8 +60,69 @@ const MyAppointmentsScreen: React.FC = () => {
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const { user } = useAuth();
   const navigation = useNavigation();
+
+  // Créer une fonction mémorisée pour éviter les re-rendus inutiles
+  const fetchAppointmentsFromMongoDB = useCallback(
+    async (currentUserId: string) => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        console.log(
+          "Récupération des rendez-vous pour l'utilisateur:",
+          currentUserId
+        );
+
+        // Récupérer les rendez-vous de l'utilisateur via l'API
+        const response = await mongodbService.find<MongoAppointment>(
+          "appointments",
+          { userId: currentUserId }
+        );
+
+        console.log("Rendez-vous récupérés:", response);
+
+        if (response && response.length > 0) {
+          // Convertir les données en format approprié pour l'UI
+          const appointmentsWithDetails: AppointmentWithDetails[] =
+            response.map((appointment) => {
+              // Extraire les données de la réponse
+              const { serviceId, professionalId, ...rest } = appointment;
+
+              // Retourner un objet avec le bon format
+              return {
+                ...rest,
+                service: typeof serviceId === "object" ? serviceId : undefined,
+                professional:
+                  typeof professionalId === "object"
+                    ? professionalId
+                    : undefined,
+              };
+            });
+
+          setAppointments(appointmentsWithDetails);
+        } else {
+          // Pas d'erreur, juste aucun rendez-vous
+          setAppointments([]);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des rendez-vous:", error);
+        setError(
+          "Impossible de charger vos rendez-vous. Veuillez réessayer plus tard."
+        );
+        Toast.show({
+          type: "error",
+          text1: "Erreur",
+          text2: "Impossible de charger vos rendez-vous.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (user && user.id) {
@@ -64,62 +131,7 @@ const MyAppointmentsScreen: React.FC = () => {
       setError("Utilisateur non connecté");
       setIsLoading(false);
     }
-  }, [user]);
-
-  const fetchAppointmentsFromMongoDB = async (currentUserId: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.log(
-        "Récupération des rendez-vous pour l'utilisateur:",
-        currentUserId
-      );
-
-      // Récupérer les rendez-vous de l'utilisateur via l'API
-      const response = await mongodbService.find<MongoAppointment>(
-        "appointments",
-        { userId: currentUserId }
-      );
-
-      console.log("Rendez-vous récupérés:", response);
-
-      if (response && response.length > 0) {
-        // Convertir les données en format approprié pour l'UI
-        const appointmentsWithDetails: AppointmentWithDetails[] = response.map(
-          (appointment) => {
-            // Extraire les données de la réponse
-            const { serviceId, professionalId, ...rest } = appointment;
-
-            // Retourner un objet avec le bon format
-            return {
-              ...rest,
-              service: typeof serviceId === "object" ? serviceId : undefined,
-              professional:
-                typeof professionalId === "object" ? professionalId : undefined,
-            };
-          }
-        );
-
-        setAppointments(appointmentsWithDetails);
-      } else {
-        // Pas d'erreur, juste aucun rendez-vous
-        setAppointments([]);
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des rendez-vous:", error);
-      setError(
-        "Impossible de charger vos rendez-vous. Veuillez réessayer plus tard."
-      );
-      Toast.show({
-        type: "error",
-        text1: "Erreur",
-        text2: "Impossible de charger vos rendez-vous.",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [user, fetchAppointmentsFromMongoDB]);
 
   const getStatusClass = (status: MongoAppointment["status"]) => {
     switch (status) {
@@ -162,15 +174,37 @@ const MyAppointmentsScreen: React.FC = () => {
 
   const formatTime = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      return format(date, "HH:mm", { locale: fr });
+      // Ne pas essayer de parser la date, renvoyer directement le temps
+      return dateString || "--:--";
     } catch (error) {
       return "--:--";
     }
   };
 
+  const confirmCancelAppointment = (id: string, date: string, time: string) => {
+    Alert.alert(
+      "Annuler le rendez-vous",
+      `Êtes-vous sûr de vouloir annuler votre rendez-vous du ${formatDate(
+        date
+      )} à ${time} ?`,
+      [
+        {
+          text: "Non",
+          style: "cancel",
+        },
+        {
+          text: "Oui, annuler",
+          style: "destructive",
+          onPress: () => handleCancelAppointment(id),
+        },
+      ]
+    );
+  };
+
   const handleCancelAppointment = async (id: string) => {
     try {
+      setCancellingId(id);
+
       // Mettre à jour le statut dans MongoDB
       const success = await mongodbService.updateOne("appointments", id, {
         status: "cancelled",
@@ -205,6 +239,8 @@ const MyAppointmentsScreen: React.FC = () => {
         text1: "Erreur",
         text2: "Une erreur est survenue lors de l'annulation",
       });
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -296,8 +332,7 @@ const MyAppointmentsScreen: React.FC = () => {
 
                     <StyledView className="mt-4 flex-row items-center">
                       <StyledText className="text-brown/80">
-                        {formatDate(appointment.date)} à{" "}
-                        {formatTime(appointment.date)}
+                        {formatDate(appointment.date)} à {appointment.time}
                       </StyledText>
                     </StyledView>
 
@@ -307,12 +342,21 @@ const MyAppointmentsScreen: React.FC = () => {
                         <TouchableOpacity
                           className="bg-red-100 py-2 px-4 rounded-lg"
                           onPress={() =>
-                            handleCancelAppointment(appointment._id)
+                            confirmCancelAppointment(
+                              appointment._id,
+                              appointment.date,
+                              appointment.time
+                            )
                           }
+                          disabled={cancellingId === appointment._id}
                         >
-                          <StyledText className="text-red-800 font-medium">
-                            Annuler
-                          </StyledText>
+                          {cancellingId === appointment._id ? (
+                            <ActivityIndicator size="small" color="#B91C1C" />
+                          ) : (
+                            <StyledText className="text-red-800 font-medium">
+                              Annuler
+                            </StyledText>
+                          )}
                         </TouchableOpacity>
                       ) : null}
                     </StyledView>

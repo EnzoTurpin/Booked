@@ -15,6 +15,32 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import Toast from "react-native-toast-message";
 import SafeAreaWrapper from "../components/SafeAreaWrapper";
+import { useAuth } from "../contexts/AuthContext";
+
+// Créneaux horaires standard
+const TIME_SLOTS: string[] = [
+  "08:00",
+  "08:30",
+  "09:00",
+  "09:30",
+  "10:00",
+  "10:30",
+  "11:00",
+  "11:30",
+  "12:00",
+  "12:30",
+  "13:00",
+  "13:30",
+  "14:00",
+  "14:30",
+  "15:00",
+  "15:30",
+  "16:00",
+  "16:30",
+  "17:00",
+  "17:30",
+  "18:00",
+];
 
 interface Professional {
   _id: string;
@@ -38,6 +64,7 @@ interface Availability {
 
 const BookingScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { user } = useAuth();
 
   // Étapes du processus de réservation
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -57,6 +84,8 @@ const BookingScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingSlots, setLoadingSlots] = useState<boolean>(false);
 
+  const [weeklySchedule, setWeeklySchedule] = useState<any>(null);
+
   useEffect(() => {
     // Charger les professionnels au démarrage
     fetchProfessionals();
@@ -71,29 +100,20 @@ const BookingScreen: React.FC = () => {
 
   useEffect(() => {
     // Filtrer les créneaux disponibles pour la date sélectionnée
-    if (selectedDate && availabilities.length > 0) {
+    if (selectedDate && selectedProfessional) {
       const dateString = format(selectedDate, "yyyy-MM-dd");
-      const availabilityForDate = availabilities.find(
-        (a) => a.date === dateString
-      );
+      const dayOfWeek = format(selectedDate, "EEEE", {
+        locale: fr,
+      }).toLowerCase();
 
-      if (availabilityForDate) {
-        // Filtrer seulement les créneaux disponibles
-        const availableSlots = availabilityForDate.slots.filter(
-          (slot) => slot.available
-        );
-        setAvailableSlots(availableSlots);
-      } else {
-        setAvailableSlots([]);
-      }
-    } else {
-      setAvailableSlots([]);
+      // Charger les horaires hebdomadaires du professionnel
+      fetchProfessionalSchedule(dayOfWeek);
     }
-  }, [selectedDate, availabilities]);
+  }, [selectedDate, selectedProfessional]);
 
   const fetchProfessionals = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const response = await api.get("/users?role=professional");
       console.log("Réponse des professionnels:", JSON.stringify(response.data));
 
@@ -103,7 +123,8 @@ const BookingScreen: React.FC = () => {
         if (response.data.data && Array.isArray(response.data.data)) {
           // Filtrer pour ne garder que les professionnels
           const professionalsData = response.data.data.filter(
-            (user: any) => user.role === "professional"
+            (user: any) =>
+              user.role === "professional" || user.role === "professionnal"
           );
           setProfessionals(professionalsData);
         }
@@ -111,7 +132,8 @@ const BookingScreen: React.FC = () => {
         else if (Array.isArray(response.data)) {
           // Filtrer pour ne garder que les professionnels
           const professionalsData = response.data.filter(
-            (user: any) => user.role === "professional"
+            (user: any) =>
+              user.role === "professional" || user.role === "professionnal"
           );
           setProfessionals(professionalsData);
         } else {
@@ -136,27 +158,230 @@ const BookingScreen: React.FC = () => {
   const fetchAvailabilities = async () => {
     setLoadingSlots(true);
     try {
-      const response = await api.get(`/availability/${selectedProfessional}`);
-      // Console log pour débogage
-      console.log("Réponse disponibilités:", JSON.stringify(response.data));
+      // Récupérer les disponibilités depuis l'API
+      try {
+        const response = await api.get(`/availability/${selectedProfessional}`);
+        console.log(
+          "Réponse disponibilités (si disponible):",
+          JSON.stringify(response.data)
+        );
 
-      if (response.data && response.data.success) {
-        setAvailabilities(response.data.data || []);
-      } else {
-        // Si le format est différent ou s'il n'y a pas de données
-        setAvailabilities(Array.isArray(response.data) ? response.data : []);
+        // Utiliser les données de l'API au lieu de les ignorer
+        if (response.data && response.data.success) {
+          // Vérifier et normaliser les dates pour chaque disponibilité
+          const normalizedAvailabilities = response.data.data.map(
+            (avail: any) => {
+              // S'assurer que la date est au format YYYY-MM-DD
+              if (avail.date) {
+                // Si la date contient une heure (format ISO), la supprimer
+                if (avail.date.includes("T")) {
+                  const datePart = avail.date.split("T")[0];
+                  return { ...avail, date: datePart };
+                }
+              }
+              return avail;
+            }
+          );
+
+          console.log(
+            "Disponibilités normalisées:",
+            normalizedAvailabilities.map((a: any) => a.date)
+          );
+          setAvailabilities(normalizedAvailabilities || []);
+        }
+      } catch (apiError) {
+        console.log(
+          "API de disponibilités non disponible, utilisation des données locales uniquement"
+        );
+        // En cas d'erreur seulement, on met un tableau vide
+        setAvailabilities([]);
       }
+
+      // Pas besoin d'attendre car nous passons directement aux horaires locaux
+      const dateString = format(selectedDate, "yyyy-MM-dd");
+      const dayOfWeek = format(selectedDate, "EEEE", {
+        locale: fr,
+      }).toLowerCase();
+
+      // Charger directement les horaires hebdomadaires du professionnel
+      fetchProfessionalSchedule(dayOfWeek);
     } catch (error) {
       console.error("Erreur lors du chargement des disponibilités:", error);
-      Toast.show({
-        type: "error",
-        text1: "Erreur",
-        text2: "Impossible de charger les disponibilités",
-      });
-      setAvailabilities([]);
+      // En cas d'erreur, passer quand même aux horaires locaux
+      const dayOfWeek = format(selectedDate, "EEEE", {
+        locale: fr,
+      }).toLowerCase();
+      fetchProfessionalSchedule(dayOfWeek);
     } finally {
       setLoadingSlots(false);
     }
+  };
+
+  const fetchProfessionalSchedule = async (dayOfWeek: string) => {
+    try {
+      setLoadingSlots(true);
+
+      // Convertir le jour français en anglais pour correspondre aux clés du backend
+      const dayMap: Record<string, string> = {
+        lundi: "monday",
+        mardi: "tuesday",
+        mercredi: "wednesday",
+        jeudi: "thursday",
+        vendredi: "friday",
+        samedi: "saturday",
+        dimanche: "sunday",
+      };
+
+      const englishDay = dayMap[dayOfWeek] || dayOfWeek;
+
+      console.log("Chargement des horaires pour", englishDay);
+
+      // Vérifier si l'API est disponible en testant un point de terminaison existant
+      try {
+        const testResponse = await api.get("/users");
+        console.log("Test de connexion API:", testResponse.status);
+      } catch (error) {
+        console.log(
+          "L'API n'est pas accessible, utilisation des données locales"
+        );
+      }
+
+      // Pour l'instant, nous utilisons des horaires prédéfinis
+      // Lorsque l'API sera prête, nous pourrons la connecter ici
+      console.log("Utilisation des horaires locaux pour la démonstration");
+      const localSchedule = {
+        monday: { isOpen: true, startTime: "09:00", endTime: "18:00" },
+        tuesday: { isOpen: true, startTime: "09:00", endTime: "18:00" },
+        wednesday: { isOpen: true, startTime: "10:00", endTime: "19:00" },
+        thursday: { isOpen: true, startTime: "09:00", endTime: "18:00" },
+        friday: { isOpen: true, startTime: "09:00", endTime: "17:00" },
+        saturday: { isOpen: true, startTime: "10:00", endTime: "14:00" },
+        sunday: { isOpen: false, startTime: "00:00", endTime: "00:00" },
+      };
+
+      setWeeklySchedule(localSchedule);
+      filterAvailableTimeSlots(localSchedule, englishDay);
+
+      // Simuler un court délai pour l'expérience utilisateur
+      setTimeout(() => {
+        setLoadingSlots(false);
+      }, 500);
+    } catch (error) {
+      console.error("Erreur lors du traitement des horaires:", error);
+      // Par défaut, utiliser tous les créneaux standards
+      filterAvailableTimeSlots(null, dayOfWeek);
+      setLoadingSlots(false);
+    }
+  };
+
+  const filterAvailableTimeSlots = (schedule: any, dayOfWeek: string) => {
+    const dateString = format(selectedDate, "yyyy-MM-dd");
+
+    // Vérifier si le jour est ouvert selon l'emploi du temps hebdomadaire
+    const isDayOpen =
+      schedule && schedule[dayOfWeek] ? schedule[dayOfWeek].isOpen : true;
+
+    if (!isDayOpen) {
+      // Si le jour est fermé, aucun créneau disponible
+      setAvailableSlots([]);
+      setLoadingSlots(false);
+      return;
+    }
+
+    // Récupérer les heures d'ouverture et de fermeture pour ce jour
+    const startTime =
+      schedule && schedule[dayOfWeek] ? schedule[dayOfWeek].startTime : "08:00";
+    const endTime =
+      schedule && schedule[dayOfWeek] ? schedule[dayOfWeek].endTime : "18:00";
+
+    // Créer des créneaux uniquement pour les heures d'ouverture
+    let filteredTimeSlots = TIME_SLOTS.filter((time) => {
+      // Comparer l'heure avec les heures d'ouverture
+      return time >= startTime && time <= endTime;
+    }).map((time) => ({
+      _id: `temp-${time}`,
+      time: time,
+      available: true, // Par défaut, tous les créneaux sont disponibles
+    }));
+
+    console.log(
+      "Créneaux générés selon les horaires d'ouverture:",
+      filteredTimeSlots.map((s) => s.time)
+    );
+
+    // Vérifier si nous avons des disponibilités spécifiques pour cette date
+    console.log(
+      "Dates disponibles:",
+      availabilities.map((a) => a.date)
+    );
+
+    const availabilityForDate = availabilities.find(
+      (a) => a.date === dateString
+    );
+
+    console.log(
+      "Disponibilités pour",
+      dateString,
+      ":",
+      availabilityForDate ? "trouvées" : "non trouvées"
+    );
+
+    // Si nous avons des disponibilités spécifiques, mettre à jour uniquement les créneaux indisponibles
+    if (availabilityForDate && availabilityForDate.slots.length > 0) {
+      console.log(
+        "Créneaux dans la base de données:",
+        availabilityForDate.slots.map(
+          (s) => `${s.time} (${s.available ? "disponible" : "indisponible"})`
+        )
+      );
+
+      // Mettre à jour les créneaux avec les données de la base de données, mais uniquement pour marquer les indisponibles
+      filteredTimeSlots = filteredTimeSlots.map((slot) => {
+        // Chercher si ce créneau existe dans la base de données
+        const existingSlot = availabilityForDate.slots.find(
+          (s) => s.time === slot.time
+        );
+
+        if (existingSlot) {
+          // Si le créneau existe dans la base, utiliser sa disponibilité
+          return {
+            _id: existingSlot._id || `temp-${slot.time}`,
+            time: slot.time,
+            available: existingSlot.available,
+          };
+        }
+        // Si le créneau n'existe pas dans la base, le garder comme disponible par défaut
+        return slot;
+      });
+    } else {
+      console.log(
+        "Pas de disponibilités spécifiques pour cette date, tous les créneaux des horaires d'ouverture sont disponibles"
+      );
+    }
+
+    // Filtrer pour ne garder que les créneaux disponibles
+    const availableSlots = filteredTimeSlots.filter((slot) => slot.available);
+
+    // Trier les créneaux par heure
+    const sortedSlots = availableSlots.sort((a, b) => {
+      const timeA = a.time.split(":").map(Number);
+      const timeB = b.time.split(":").map(Number);
+
+      // Comparer les heures d'abord, puis les minutes
+      if (timeA[0] !== timeB[0]) {
+        return timeA[0] - timeB[0];
+      }
+      return timeA[1] - timeB[1];
+    });
+
+    setAvailableSlots(sortedSlots);
+    setLoadingSlots(false);
+
+    // DÉBOGAGE: Afficher les créneaux disponibles
+    console.log(
+      "Créneaux disponibles après filtrage pour " + dayOfWeek + ":",
+      sortedSlots.map((slot) => slot.time)
+    );
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -182,34 +407,166 @@ const BookingScreen: React.FC = () => {
         throw new Error("Veuillez sélectionner un professionnel et un horaire");
       }
 
+      if (!user || !user.id) {
+        throw new Error("Vous devez être connecté pour prendre un rendez-vous");
+      }
+
       const appointmentDate = format(selectedDate, "yyyy-MM-dd");
 
-      const response = await api.post("/appointments", {
+      // S'assurer que l'heure est au bon format
+      const timeToSend = selectedTimeSlot.trim();
+
+      console.log("DÉBOGAGE - Données envoyées au serveur:", {
         professionalId: selectedProfessional,
         date: appointmentDate,
-        time: selectedTimeSlot,
+        time: timeToSend,
         status: "pending",
+        userId: user.id,
       });
 
-      if (response.data) {
-        // Réinitialiser le formulaire
-        setSelectedProfessional("");
-        setSelectedDate(new Date());
-        setSelectedTimeSlot("");
-        setCurrentStep(3); // Étape de confirmation
+      // Vérifier d'abord si le créneau est réellement disponible dans la base de données
+      const availabilityForDate = availabilities.find(
+        (a) => a.date === appointmentDate
+      );
+
+      // Si nous avons des disponibilités pour cette date, vérifier seulement si le créneau n'est pas explicitement marqué comme indisponible
+      if (availabilityForDate) {
+        const existingSlot = availabilityForDate.slots.find(
+          (slot) => slot.time === timeToSend
+        );
+
+        // Si le créneau existe et est explicitement marqué comme indisponible
+        if (existingSlot && !existingSlot.available) {
+          Toast.show({
+            type: "error",
+            text1: "Désolé",
+            text2: "Ce créneau n'est pas disponible",
+          });
+          setLoading(false);
+          return;
+        }
+
+        // Si le créneau existe et est disponible ou s'il n'existe pas encore, continuer
+        console.log("Créneau disponible ou non défini, on continue");
+      } else {
+        // Si aucune disponibilité n'est définie pour cette date, vérifier uniquement les horaires d'ouverture
+        console.log(
+          "Pas de disponibilités pour cette date dans la base de données, vérification des horaires d'ouverture uniquement"
+        );
+      }
+
+      // Vérifier si l'heure est dans les horaires d'ouverture
+      const dayOfWeek = format(selectedDate, "EEEE", {
+        locale: fr,
+      }).toLowerCase();
+
+      // Convertir le jour français en anglais
+      const dayMap: Record<string, string> = {
+        lundi: "monday",
+        mardi: "tuesday",
+        mercredi: "wednesday",
+        jeudi: "thursday",
+        vendredi: "friday",
+        samedi: "saturday",
+        dimanche: "sunday",
+      };
+
+      const englishDay = dayMap[dayOfWeek] || dayOfWeek;
+
+      // Récupérer le planning pour ce jour
+      const daySchedule = weeklySchedule?.[englishDay];
+
+      if (!daySchedule || !daySchedule.isOpen) {
+        Toast.show({
+          type: "error",
+          text1: "Désolé",
+          text2: "Ce jour n'est pas ouvert",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (
+        !(
+          timeToSend >= daySchedule.startTime &&
+          timeToSend <= daySchedule.endTime
+        )
+      ) {
+        Toast.show({
+          type: "error",
+          text1: "Désolé",
+          text2: "Ce créneau est en dehors des horaires d'ouverture",
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log(
+        "Créneau dans les horaires d'ouverture, tentative de création du rendez-vous"
+      );
+
+      // Tentative de création de rendez-vous
+      try {
+        const response = await api.post("/appointments", {
+          professionalId: selectedProfessional,
+          date: appointmentDate,
+          time: timeToSend,
+          status: "pending",
+          userId: user.id,
+        });
+
+        if (response.data) {
+          // Réinitialiser le formulaire
+          setSelectedProfessional("");
+          setSelectedDate(new Date());
+          setSelectedTimeSlot("");
+          setCurrentStep(3); // Étape de confirmation
+
+          Toast.show({
+            type: "success",
+            text1: "Succès",
+            text2: "Votre rendez-vous a été enregistré",
+          });
+        }
+      } catch (apiError: any) {
+        console.error(
+          "Erreur API lors de la création du rendez-vous:",
+          apiError
+        );
+
+        // Afficher l'erreur réelle au lieu de simuler un succès
+        let errorMessage = "Impossible de créer le rendez-vous";
+        if (
+          apiError.response &&
+          apiError.response.data &&
+          apiError.response.data.message
+        ) {
+          errorMessage = apiError.response.data.message;
+        }
 
         Toast.show({
-          type: "success",
-          text1: "Succès",
-          text2: "Votre rendez-vous a été enregistré",
+          type: "error",
+          text1: "Erreur",
+          text2: errorMessage,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de la création du rendez-vous:", error);
+
+      // Extraire le message d'erreur spécifique de la réponse API
+      let errorMessage = "Impossible de créer le rendez-vous";
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        errorMessage = error.response.data.message;
+      }
+
       Toast.show({
         type: "error",
         text1: "Erreur",
-        text2: "Impossible de créer le rendez-vous",
+        text2: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -322,31 +679,28 @@ const BookingScreen: React.FC = () => {
         {loadingSlots ? (
           <ActivityIndicator size="small" color="#A8B9A3" />
         ) : availableSlots.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <StyledView className="flex-row space-x-3 py-2">
-              {availableSlots.map((slot) => (
-                <TouchableOpacity
-                  key={slot._id}
-                  className={`py-2 px-4 rounded-lg border ${
-                    selectedTimeSlot === slot.time
-                      ? "bg-sage border-sage"
-                      : "bg-white border-sage/20"
+          <View className="flex-row flex-wrap justify-between">
+            {availableSlots.map((slot) => (
+              <TouchableOpacity
+                key={slot._id}
+                className={`py-2 px-4 rounded-lg border m-1 ${
+                  selectedTimeSlot === slot.time
+                    ? "bg-sage border-sage"
+                    : "bg-white border-sage/20"
+                }`}
+                style={{ width: "30%", marginBottom: 8 }}
+                onPress={() => setSelectedTimeSlot(slot.time)}
+              >
+                <StyledText
+                  className={`text-center ${
+                    selectedTimeSlot === slot.time ? "text-white" : "text-brown"
                   }`}
-                  onPress={() => setSelectedTimeSlot(slot.time)}
                 >
-                  <StyledText
-                    className={`${
-                      selectedTimeSlot === slot.time
-                        ? "text-white"
-                        : "text-brown"
-                    }`}
-                  >
-                    {slot.time}
-                  </StyledText>
-                </TouchableOpacity>
-              ))}
-            </StyledView>
-          </ScrollView>
+                  {slot.time}
+                </StyledText>
+              </TouchableOpacity>
+            ))}
+          </View>
         ) : (
           <StyledText className="text-brown-light">
             Aucun créneau disponible pour cette date

@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import apiService from "../services/api";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -10,7 +16,7 @@ type User = {
   lastName: string;
   isEmailVerified?: boolean;
   phone?: string;
-  role: "client" | "professional" | "admin";
+  role: "client" | "professional" | "professionnal" | "admin";
 };
 
 type AuthContextType = {
@@ -30,6 +36,7 @@ type AuthContextType = {
   }) => Promise<{ needsVerification?: boolean; email?: string } | void>;
   logout: () => void;
   setUser: (userData: User, token: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,6 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             role: response.data.data.role as
               | "client"
               | "professional"
+              | "professionnal"
               | "admin",
           };
 
@@ -134,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     loadUser();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -178,7 +186,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           lastName: response.data.user.lastName,
           isEmailVerified: response.data.user.isEmailVerified || true,
           phone: response.data.user.phone || "",
-          role: response.data.user.role as "client" | "professional" | "admin",
+          role: response.data.user.role as
+            | "client"
+            | "professional"
+            | "professionnal"
+            | "admin",
         };
 
         // Définir l'utilisateur directement sans utiliser loadUser
@@ -218,99 +230,107 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       throw err;
     }
-  };
+  }, []);
 
-  const register = async (data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-  }) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const register = useCallback(
+    async (data: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      password: string;
+      confirmPassword: string;
+    }) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      // Envoyer les données firstName et lastName directement
-      const serverData = {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        password: data.password,
-      };
+        // Envoyer les données firstName et lastName directement
+        const serverData = {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          password: data.password,
+        };
 
-      console.log("Envoi de la requête d'inscription au serveur");
-      const response = await apiService.post("/auth/register", serverData);
-      console.log("Réponse du serveur:", response.data);
+        console.log("Envoi de la requête d'inscription au serveur");
+        const response = await apiService.post("/auth/register", serverData);
+        console.log("Réponse du serveur:", response.data);
 
-      if (response.data.success) {
-        // Si l'inscription nécessite une vérification d'email
-        if (response.data.needsVerification) {
-          setLoading(false);
-          console.log(
-            "Vérification d'email nécessaire, préparation de la redirection"
-          );
+        if (response.data.success) {
+          // Si l'inscription nécessite une vérification d'email
+          if (response.data.needsVerification) {
+            setLoading(false);
+            console.log(
+              "Vérification d'email nécessaire, préparation de la redirection"
+            );
 
-          // Ne pas stocker le token ici - l'utilisateur doit d'abord vérifier son email
-          await AsyncStorage.setItem("pendingVerificationEmail", data.email);
-          await AsyncStorage.setItem("justRegistered", "true");
+            // Ne pas stocker le token ici - l'utilisateur doit d'abord vérifier son email
+            await AsyncStorage.setItem("pendingVerificationEmail", data.email);
+            await AsyncStorage.setItem("justRegistered", "true");
+
+            Toast.show({
+              type: "success",
+              text1: "Inscription réussie",
+              text2: "Veuillez vérifier votre email pour activer votre compte.",
+            });
+
+            // Retourner directement l'information pour que le composant RegisterScreen puisse rediriger
+            return {
+              needsVerification: true,
+              email: data.email,
+            };
+          }
+
+          // Ce code ne devrait jamais être exécuté car tous les utilisateurs doivent vérifier leur email
+          // Mais on le garde au cas où la logique changerait dans le futur
+          await AsyncStorage.setItem("token", response.data.token);
+
+          // Créer l'objet utilisateur à partir des données de réponse
+          const userData = {
+            id: response.data.user._id,
+            email: response.data.user.email,
+            firstName: response.data.user.firstName || data.firstName,
+            lastName: response.data.user.lastName || data.lastName,
+            isEmailVerified: response.data.user.isEmailVerified || true,
+            phone: response.data.user.phone || "",
+            role: response.data.user.role as
+              | "client"
+              | "professional"
+              | "professionnal"
+              | "admin",
+          };
+
+          setUserState(userData);
 
           Toast.show({
             type: "success",
             text1: "Inscription réussie",
-            text2: "Veuillez vérifier votre email pour activer votre compte.",
+            text2: `Bienvenue, ${userData.firstName} !`,
           });
-
-          // Retourner directement l'information pour que le composant RegisterScreen puisse rediriger
-          return {
-            needsVerification: true,
-            email: data.email,
-          };
+        } else {
+          throw new Error(response.data.error || "Échec de l'inscription");
         }
-
-        // Ce code ne devrait jamais être exécuté car tous les utilisateurs doivent vérifier leur email
-        // Mais on le garde au cas où la logique changerait dans le futur
-        await AsyncStorage.setItem("token", response.data.token);
-
-        // Créer l'objet utilisateur à partir des données de réponse
-        const userData = {
-          id: response.data.user._id,
-          email: response.data.user.email,
-          firstName: response.data.user.firstName || data.firstName,
-          lastName: response.data.user.lastName || data.lastName,
-          isEmailVerified: response.data.user.isEmailVerified || true,
-          phone: response.data.user.phone || "",
-          role: response.data.user.role as "client" | "professional" | "admin",
-        };
-
-        setUserState(userData);
-
-        Toast.show({
-          type: "success",
-          text1: "Inscription réussie",
-          text2: `Bienvenue, ${userData.firstName} !`,
-        });
-      } else {
-        throw new Error(response.data.error || "Échec de l'inscription");
+      } catch (err: any) {
+        // Gérer les erreurs normales
+        if (!err.needsVerification) {
+          const message =
+            err.response?.data?.error || "Une erreur est survenue";
+          setError(message);
+          Toast.show({
+            type: "error",
+            text1: "Erreur d'inscription",
+            text2: message,
+          });
+        }
+        throw err;
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      // Gérer les erreurs normales
-      if (!err.needsVerification) {
-        const message = err.response?.data?.error || "Une erreur est survenue";
-        setError(message);
-        Toast.show({
-          type: "error",
-          text1: "Erreur d'inscription",
-          text2: message,
-        });
-      }
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    []
+  );
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -348,9 +368,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const setUser = async (userData: User, token: string) => {
+  const setUser = useCallback(async (userData: User, token: string) => {
     try {
       await AsyncStorage.setItem("token", token);
       // Supprimer les indicateurs de vérification d'email puisque l'utilisateur est maintenant vérifié
@@ -369,7 +389,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Erreur lors de la configuration de l'utilisateur:", error);
       throw error;
     }
-  };
+  }, []);
+
+  // Fonction pour recharger les informations utilisateur
+  const refreshUser = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Vérifier si un token existe
+      const token = await AsyncStorage.getItem("token");
+
+      if (!token) {
+        console.log("Aucun token trouvé pour rafraîchir l'utilisateur");
+        setUserState(null);
+        setLoading(false);
+        return;
+      }
+
+      // Récupérer les informations à jour de l'utilisateur
+      const response = await apiService.get("/auth/me");
+
+      if (response.data.success) {
+        const userData = {
+          id: response.data.data._id,
+          email: response.data.data.email,
+          firstName: response.data.data.firstName,
+          lastName: response.data.data.lastName,
+          isEmailVerified: response.data.data.isEmailVerified || false,
+          phone: response.data.data.phone || "",
+          role: response.data.data.role as
+            | "client"
+            | "professional"
+            | "professionnal"
+            | "admin",
+        };
+
+        setUserState(userData);
+        console.log(
+          "Utilisateur rafraîchi avec succès:",
+          userData.email,
+          "Role:",
+          userData.role
+        );
+      }
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement de l'utilisateur:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -381,6 +449,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         register,
         logout,
         setUser,
+        refreshUser,
       }}
     >
       {children}

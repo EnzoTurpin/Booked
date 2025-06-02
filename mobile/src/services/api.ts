@@ -200,6 +200,56 @@ const apiService = {
     }
   },
 
+  // Méthodes génériques
+  get: async (endpoint: string) => {
+    try {
+      const response = await api.get(endpoint);
+      return response;
+    } catch (error) {
+      console.error(`GET request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  },
+
+  post: async (endpoint: string, data: any) => {
+    try {
+      const response = await api.post(endpoint, data);
+      return response;
+    } catch (error) {
+      console.error(`POST request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  },
+
+  put: async (endpoint: string, data: any) => {
+    try {
+      const response = await api.put(endpoint, data);
+      return response;
+    } catch (error) {
+      console.error(`PUT request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  },
+
+  patch: async (endpoint: string, data: any) => {
+    try {
+      return await api.patch(endpoint, data);
+    } catch (error) {
+      console.error(`PATCH request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  },
+
+  delete: async (endpoint: string) => {
+    try {
+      const response = await api.delete(endpoint);
+      return response;
+    } catch (error) {
+      console.error(`DELETE request failed for ${endpoint}:`, error);
+      throw error;
+    }
+  },
+
   // Services
   getServices: async (): Promise<IService[]> => {
     try {
@@ -333,52 +383,6 @@ const apiService = {
       return true;
     } catch (error) {
       console.error("Erreur lors du changement de mot de passe:", error);
-      throw error;
-    }
-  },
-
-  // Utilitaires pour les méthodes HTTP génériques
-  get: async (endpoint: string) => {
-    try {
-      return await api.get(endpoint);
-    } catch (error) {
-      console.error(`GET request failed for ${endpoint}:`, error);
-      throw error;
-    }
-  },
-
-  post: async (endpoint: string, data: any) => {
-    try {
-      return await api.post(endpoint, data);
-    } catch (error) {
-      console.error(`POST request failed for ${endpoint}:`, error);
-      throw error;
-    }
-  },
-
-  put: async (endpoint: string, data: any) => {
-    try {
-      return await api.put(endpoint, data);
-    } catch (error) {
-      console.error(`PUT request failed for ${endpoint}:`, error);
-      throw error;
-    }
-  },
-
-  patch: async (endpoint: string, data: any) => {
-    try {
-      return await api.patch(endpoint, data);
-    } catch (error) {
-      console.error(`PATCH request failed for ${endpoint}:`, error);
-      throw error;
-    }
-  },
-
-  delete: async (endpoint: string) => {
-    try {
-      return await api.delete(endpoint);
-    } catch (error) {
-      console.error(`DELETE request failed for ${endpoint}:`, error);
       throw error;
     }
   },

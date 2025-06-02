@@ -131,8 +131,23 @@ const mongodbService = {
     update: object
   ): Promise<boolean> => {
     try {
+      // Cas spécial pour l'annulation de rendez-vous
+      if (
+        collectionName === "appointments" &&
+        update &&
+        (update as any).status === "cancelled"
+      ) {
+        console.log(`Annulation du rendez-vous ${id}`);
+        const response = await apiClient.put(`/appointments/${id}`, update);
+        return response.status === 200;
+      }
+
+      // Cas générique
       const response = await apiClient.put(`/${collectionName}/${id}`, update);
-      return response.data.modifiedCount > 0;
+      return (
+        response.data &&
+        (response.data.modifiedCount > 0 || response.status === 200)
+      );
     } catch (error) {
       console.error(
         `Erreur lors de la mise à jour dans ${collectionName}:`,

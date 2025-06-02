@@ -1,80 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   ScrollView,
   View,
-  Text,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
+  ImageBackground,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import StyledText from "../components/StyledText";
 import StyledView from "../components/StyledView";
-import { realmService } from "../services";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../contexts/AuthContext";
 import SafeAreaWrapper from "../components/SafeAreaWrapper";
 
 type RootStackParamList = {
-  Booking: undefined;
-  Services: undefined;
+  BookingTab: undefined;
+  MyAppointmentsTab: undefined;
+  ProfileTab: undefined;
 };
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
-// Interface pour les services depuis MongoDB
-interface MongoService {
-  _id: string;
-  name: string;
-  description: string;
-  duration: number;
-  price: number;
-  category: string;
-  professionalId: string;
-  active: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuth();
-  const [popularServices, setPopularServices] = useState<MongoService[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchPopularServices();
-  }, []);
-
-  const fetchPopularServices = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Récupérer tous les services depuis MongoDB via Realm
-      const services = realmService.findAll("Service") as MongoService[];
-
-      if (services && services.length > 0) {
-        // Pour l'exemple, nous allons simplement prendre les 3 premiers services
-        // Dans une véritable application, vous pourriez utiliser des critères comme
-        // les mieux notés, les plus réservés, etc.
-        const popular = services.slice(0, 3);
-        setPopularServices(popular);
-      } else {
-        setError("Aucun service disponible.");
-      }
-    } catch (error) {
-      console.error(
-        "Erreur lors du chargement des services populaires:",
-        error
-      );
-      setError("Impossible de charger les services populaires.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <SafeAreaWrapper>
@@ -85,108 +35,144 @@ const HomeScreen: React.FC = () => {
             Booked
           </StyledText>
           <StyledText className="text-lg text-white mt-2">
-            Votre salon de beauté en ligne
+            Votre plateforme de réservation
           </StyledText>
         </StyledView>
 
         {/* Section principale */}
         <StyledView className="p-6">
           <StyledText className="text-2xl font-bold text-brown mb-4">
-            Bienvenue chez Booked
+            Bienvenue, {user?.firstName || ""}
           </StyledText>
 
           <StyledText className="text-base text-brown-light mb-6">
-            Prenez rendez-vous facilement pour tous vos besoins de beauté et de
-            bien-être. Notre équipe de professionnels vous attend pour une
-            expérience exceptionnelle.
+            Prenez rendez-vous facilement avec nos professionnels. Quelques
+            clics suffisent pour réserver le créneau qui vous convient.
           </StyledText>
 
-          {/* Boutons d'action */}
-          <StyledView className="space-y-4 mb-8">
+          {/* Cartes d'actions principales */}
+          <StyledView className="flex-row justify-between mb-6">
             <TouchableOpacity
-              className="bg-sage py-3 rounded-lg items-center"
-              onPress={() => navigation.navigate("Booking" as never)}
+              className="bg-white rounded-xl shadow-sm p-4 w-[48%]"
+              style={{ elevation: 2 }}
+              onPress={() => navigation.navigate("BookingTab" as never)}
             >
-              <StyledText className="text-white font-bold">
+              <View className="bg-sage/20 rounded-full w-12 h-12 items-center justify-center mb-3">
+                <Ionicons name="calendar-outline" size={24} color="#A8B9A3" />
+              </View>
+              <StyledText className="text-brown font-bold mb-1">
+                Réserver
+              </StyledText>
+              <StyledText className="text-brown-light text-sm">
+                Prendre un rendez-vous
+              </StyledText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              className="bg-white rounded-xl shadow-sm p-4 w-[48%]"
+              style={{ elevation: 2 }}
+              onPress={() => navigation.navigate("MyAppointmentsTab" as never)}
+            >
+              <View className="bg-sage/20 rounded-full w-12 h-12 items-center justify-center mb-3">
+                <Ionicons name="list-outline" size={24} color="#A8B9A3" />
+              </View>
+              <StyledText className="text-brown font-bold mb-1">
+                Mes RDV
+              </StyledText>
+              <StyledText className="text-brown-light text-sm">
+                Voir mes rendez-vous
+              </StyledText>
+            </TouchableOpacity>
+          </StyledView>
+
+          {/* Bannière de prise de rendez-vous */}
+          <TouchableOpacity
+            className="bg-sage rounded-xl overflow-hidden mb-6"
+            onPress={() => navigation.navigate("BookingTab" as never)}
+          >
+            <StyledView className="p-5">
+              <StyledText className="text-white text-xl font-bold mb-2">
                 Prendre rendez-vous
               </StyledText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              className="bg-white border border-sage py-3 rounded-lg items-center"
-              onPress={() => navigation.navigate("Services" as never)}
-            >
-              <StyledText className="text-sage font-bold">
-                Découvrir nos services
+              <StyledText className="text-white opacity-90 mb-3">
+                Réservez votre créneau en quelques étapes simples
               </StyledText>
-            </TouchableOpacity>
-          </StyledView>
+              <StyledView className="flex-row items-center">
+                <StyledText className="text-white font-bold">
+                  Réserver maintenant
+                </StyledText>
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color="white"
+                  style={{ marginLeft: 8 }}
+                />
+              </StyledView>
+            </StyledView>
+          </TouchableOpacity>
 
-          {/* Services populaires */}
-          <StyledView className="mb-8">
+          {/* Informations / Guide */}
+          <StyledView
+            className="bg-white rounded-xl p-5 shadow-sm mb-6"
+            style={{ elevation: 2 }}
+          >
             <StyledText className="text-xl font-bold text-brown mb-4">
-              Nos services populaires
+              Comment ça marche
             </StyledText>
 
-            {isLoading ? (
-              <StyledView className="items-center py-4">
-                <ActivityIndicator size="small" color="#A8B9A3" />
+            <StyledView className="mb-3 flex-row">
+              <StyledView className="w-8 h-8 bg-sage rounded-full items-center justify-center mr-3">
+                <StyledText className="text-white font-bold">1</StyledText>
               </StyledView>
-            ) : error ? (
-              <StyledView className="bg-white p-4 rounded-lg shadow-sm border border-sage/20">
-                <StyledText className="text-brown-light">{error}</StyledText>
+              <StyledView className="flex-1">
+                <StyledText className="text-brown font-semibold mb-1">
+                  Choisissez un professionnel
+                </StyledText>
+                <StyledText className="text-brown-light text-sm">
+                  Sélectionnez le professionnel avec qui vous souhaitez prendre
+                  rendez-vous
+                </StyledText>
               </StyledView>
-            ) : (
-              <StyledView className="space-y-4">
-                {popularServices.map((service) => (
-                  <TouchableOpacity
-                    key={service._id}
-                    onPress={() =>
-                      navigation.navigate(
-                        "Booking" as never,
-                        { serviceId: service._id } as never
-                      )
-                    }
-                    className="bg-white p-4 rounded-lg shadow-sm border border-sage/20"
-                  >
-                    <StyledText className="text-lg font-bold text-brown">
-                      {service.name}
-                    </StyledText>
-                    <StyledText className="text-base text-brown-light mt-1">
-                      À partir de {service.price}€ - {service.duration} min
-                    </StyledText>
-                  </TouchableOpacity>
-                ))}
+            </StyledView>
+
+            <StyledView className="mb-3 flex-row">
+              <StyledView className="w-8 h-8 bg-sage rounded-full items-center justify-center mr-3">
+                <StyledText className="text-white font-bold">2</StyledText>
               </StyledView>
-            )}
+              <StyledView className="flex-1">
+                <StyledText className="text-brown font-semibold mb-1">
+                  Sélectionnez une date
+                </StyledText>
+                <StyledText className="text-brown-light text-sm">
+                  Choisissez la date qui vous convient dans le calendrier
+                </StyledText>
+              </StyledView>
+            </StyledView>
+
+            <StyledView className="flex-row">
+              <StyledView className="w-8 h-8 bg-sage rounded-full items-center justify-center mr-3">
+                <StyledText className="text-white font-bold">3</StyledText>
+              </StyledView>
+              <StyledView className="flex-1">
+                <StyledText className="text-brown font-semibold mb-1">
+                  Confirmez votre rendez-vous
+                </StyledText>
+                <StyledText className="text-brown-light text-sm">
+                  Vérifiez les détails et confirmez votre réservation
+                </StyledText>
+              </StyledView>
+            </StyledView>
           </StyledView>
 
-          {/* Témoignages */}
-          <StyledView className="mb-8">
-            <StyledText className="text-xl font-bold text-brown mb-4">
-              Témoignages clients
+          {/* Bouton d'action principal */}
+          <TouchableOpacity
+            className="bg-sage py-4 rounded-lg items-center mb-8"
+            onPress={() => navigation.navigate("BookingTab" as never)}
+          >
+            <StyledText className="text-white font-bold text-lg">
+              Prendre rendez-vous maintenant
             </StyledText>
-
-            <StyledView className="bg-white p-4 rounded-lg shadow-sm border border-sage/20 mb-4">
-              <StyledText className="text-base text-brown-light italic">
-                "Service impeccable et personnel très professionnel. Je
-                recommande vivement !"
-              </StyledText>
-              <StyledText className="text-sm text-sage mt-2 font-bold">
-                - Marie L.
-              </StyledText>
-            </StyledView>
-
-            <StyledView className="bg-white p-4 rounded-lg shadow-sm border border-sage/20">
-              <StyledText className="text-base text-brown-light italic">
-                "Très satisfait de ma coupe. Le salon est élégant et l'ambiance
-                est parfaite."
-              </StyledText>
-              <StyledText className="text-sm text-sage mt-2 font-bold">
-                - Thomas D.
-              </StyledText>
-            </StyledView>
-          </StyledView>
+          </TouchableOpacity>
         </StyledView>
       </ScrollView>
     </SafeAreaWrapper>

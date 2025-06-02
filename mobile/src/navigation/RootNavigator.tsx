@@ -20,124 +20,199 @@ import apiService from "../services/api";
 // Import des écrans professionnels
 import ManageAvailabilityScreen from "../screens/professional/ManageAvailabilityScreen";
 import ManageAppointmentsScreen from "../screens/professional/ManageAppointmentsScreen";
-import { ActivityIndicator, View } from "react-native";
+import ProfessionalHomeScreen from "../screens/professional/ProfessionalHomeScreen";
+import ScheduleSettingsScreen from "../screens/professional/ScheduleSettingsScreen";
+import {
+  ActivityIndicator,
+  View,
+  Text,
+  TouchableOpacity,
+  Platform,
+} from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Stack = createStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator();
+const ClientTab = createBottomTabNavigator();
+const ProfessionalTab = createBottomTabNavigator();
+
+// Navigateur pour les clients
+const ClientTabNavigator = () => {
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  console.log("ClientTabNavigator - User:", user);
+  console.log("ClientTabNavigator - Role:", user?.role);
+
+  return (
+    <ClientTab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === "HomeTab") {
+            iconName = focused ? "home" : "home-outline";
+          } else if (route.name === "BookingTab") {
+            iconName = focused ? "calendar" : "calendar-outline";
+          } else if (route.name === "MyAppointmentsTab") {
+            iconName = focused ? "list" : "list-outline";
+          } else if (route.name === "ProfileTab") {
+            iconName = focused ? "person" : "person-outline";
+          }
+
+          return <Ionicons name={iconName as any} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: "#A8B9A3",
+        tabBarInactiveTintColor: "gray",
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: "#FAFAF8",
+          borderTopWidth: 0,
+          elevation: 2,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          height: 50,
+          paddingBottom: 0,
+          paddingTop: 0,
+          position: "absolute",
+          bottom: Platform.OS === "ios" ? (insets.bottom > 0 ? 20 : 0) : 0,
+          left: 0,
+          right: 0,
+          zIndex: 999,
+        },
+      })}
+    >
+      <ClientTab.Screen
+        name="HomeTab"
+        component={HomeScreen}
+        options={{ tabBarLabel: "Accueil" }}
+      />
+      <ClientTab.Screen
+        name="BookingTab"
+        component={BookingScreen}
+        options={{ tabBarLabel: "Réservation" }}
+      />
+      <ClientTab.Screen
+        name="MyAppointmentsTab"
+        component={MyAppointmentsScreen}
+        options={{ tabBarLabel: "Mes RDV" }}
+      />
+      <ClientTab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{ tabBarLabel: "Profil" }}
+      />
+    </ClientTab.Navigator>
+  );
+};
+
+// Navigateur pour les professionnels
+const ProfessionalTabNavigator = () => {
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  console.log("ProfessionalTabNavigator - User:", user);
+  console.log("ProfessionalTabNavigator - Role:", user?.role);
+
+  return (
+    <ProfessionalTab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+
+          if (route.name === "HomeTab") {
+            iconName = focused ? "home" : "home-outline";
+          } else if (route.name === "ManageAvailabilityTab") {
+            iconName = focused ? "calendar" : "calendar-outline";
+          } else if (route.name === "ManageAppointmentsTab") {
+            iconName = focused ? "list" : "list-outline";
+          } else if (route.name === "ProfileTab") {
+            iconName = focused ? "person" : "person-outline";
+          }
+
+          // Assurez-vous que l'icône est valide
+          if (!iconName) {
+            iconName = "help-outline";
+          }
+
+          return <Ionicons name={iconName as any} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: "#A8B9A3",
+        tabBarInactiveTintColor: "#5D4037",
+        tabBarStyle: {
+          backgroundColor: "#FAFAF8",
+          borderTopWidth: 0,
+          elevation: 2,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 2,
+          height: 50,
+          paddingBottom: 0,
+          paddingTop: 0,
+          position: "absolute",
+          bottom: Platform.OS === "ios" ? (insets.bottom > 0 ? 20 : 0) : 0,
+          left: 0,
+          right: 0,
+          zIndex: 999,
+        },
+        headerShown: false,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "500",
+          marginBottom: 3,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 5,
+        },
+        tabBarShowLabel: true,
+      })}
+    >
+      <ProfessionalTab.Screen
+        name="HomeTab"
+        component={ProfessionalHomeScreen}
+        options={{ tabBarLabel: "Accueil" }}
+      />
+      <ProfessionalTab.Screen
+        name="ManageAvailabilityTab"
+        component={ManageAvailabilityScreen}
+        options={{ tabBarLabel: "Disponibilités" }}
+      />
+      <ProfessionalTab.Screen
+        name="ManageAppointmentsTab"
+        component={ManageAppointmentsScreen}
+        options={{ tabBarLabel: "Rendez-vous" }}
+      />
+      <ProfessionalTab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{ tabBarLabel: "Profil" }}
+      />
+    </ProfessionalTab.Navigator>
+  );
+};
 
 const AuthenticatedTabNavigator = () => {
   const { user } = useAuth();
+  console.log("AuthenticatedTabNavigator - User:", user);
+  console.log("AuthenticatedTabNavigator - Role:", user?.role);
 
-  // Navigateur pour les clients
-  if (user?.role === "client" || !user?.role) {
-    return (
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName;
-
-            if (route.name === "HomeTab") {
-              iconName = focused ? "home" : "home-outline";
-            } else if (route.name === "BookingTab") {
-              iconName = focused ? "calendar" : "calendar-outline";
-            } else if (route.name === "MyAppointmentsTab") {
-              iconName = focused ? "list" : "list-outline";
-            } else if (route.name === "ProfileTab") {
-              iconName = focused ? "person" : "person-outline";
-            }
-
-            return (
-              <Ionicons name={iconName as any} size={size} color={color} />
-            );
-          },
-          tabBarActiveTintColor: "#A8B9A3",
-          tabBarInactiveTintColor: "gray",
-          headerShown: false,
-        })}
-      >
-        <Tab.Screen
-          name="HomeTab"
-          component={HomeScreen}
-          options={{ tabBarLabel: "Accueil" }}
-        />
-        <Tab.Screen
-          name="BookingTab"
-          component={BookingScreen}
-          options={{ tabBarLabel: "Réservation" }}
-        />
-        <Tab.Screen
-          name="MyAppointmentsTab"
-          component={MyAppointmentsScreen}
-          options={{ tabBarLabel: "Mes RDV" }}
-        />
-        <Tab.Screen
-          name="ProfileTab"
-          component={ProfileScreen}
-          options={{ tabBarLabel: "Profil" }}
-        />
-      </Tab.Navigator>
+  // Forcer un remontage du composant lorsque le rôle change
+  React.useEffect(() => {
+    console.log(
+      "Rôle utilisateur changé, remontage du navigateur:",
+      user?.role
     );
+  }, [user?.role]);
+
+  // Sélectionner le navigateur approprié selon le rôle de l'utilisateur
+  if (user?.role === "professional" || user?.role === "professionnal") {
+    console.log("Loading PROFESSIONAL navigator");
+    return <ProfessionalTabNavigator />;
+  } else {
+    console.log("Loading CLIENT navigator");
+    return <ClientTabNavigator />;
   }
-
-  // Navigateur pour les professionnels
-  if (user?.role === "professional") {
-    return (
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName;
-
-            if (route.name === "HomeTab") {
-              iconName = focused ? "home" : "home-outline";
-            } else if (route.name === "ManageAvailabilityTab") {
-              iconName = focused ? "calendar" : "calendar-outline";
-            } else if (route.name === "ManageAppointmentsTab") {
-              iconName = focused ? "list" : "list-outline";
-            } else if (route.name === "ProfileTab") {
-              iconName = focused ? "person" : "person-outline";
-            }
-
-            return (
-              <Ionicons name={iconName as any} size={size} color={color} />
-            );
-          },
-          tabBarActiveTintColor: "#A8B9A3",
-          tabBarInactiveTintColor: "gray",
-          headerShown: false,
-        })}
-      >
-        <Tab.Screen
-          name="HomeTab"
-          component={HomeScreen}
-          options={{ tabBarLabel: "Accueil" }}
-        />
-        <Tab.Screen
-          name="ManageAvailabilityTab"
-          component={ManageAvailabilityScreen}
-          options={{ tabBarLabel: "Disponibilités" }}
-        />
-        <Tab.Screen
-          name="ManageAppointmentsTab"
-          component={ManageAppointmentsScreen}
-          options={{ tabBarLabel: "Rendez-vous" }}
-        />
-        <Tab.Screen
-          name="ProfileTab"
-          component={ProfileScreen}
-          options={{ tabBarLabel: "Profil" }}
-        />
-      </Tab.Navigator>
-    );
-  }
-
-  // Fallback
-  return (
-    <Tab.Navigator>
-      <Tab.Screen name="HomeTab" component={HomeScreen} />
-      <Tab.Screen name="ProfileTab" component={ProfileScreen} />
-    </Tab.Navigator>
-  );
 };
 
 const RootNavigator: React.FC = () => {
@@ -172,6 +247,12 @@ const RootNavigator: React.FC = () => {
               name="ChangePassword"
               component={ChangePasswordScreen}
             />
+            {user.role === "professional" || user.role === "professionnal" ? (
+              <Stack.Screen
+                name="ScheduleSettings"
+                component={ScheduleSettingsScreen}
+              />
+            ) : null}
           </>
         ) : (
           // Routes publiques - si l'utilisateur n'est pas connecté

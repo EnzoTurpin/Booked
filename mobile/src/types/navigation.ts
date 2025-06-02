@@ -13,6 +13,7 @@ export type RootStackParamList = {
   VerifyOTP: {
     email?: string;
   };
+  ScheduleSettings: undefined;
 };
 
 export type TabNavigatorParamList = {
@@ -21,7 +22,9 @@ export type TabNavigatorParamList = {
   MyAppointmentsTab: undefined;
   ProfileTab: undefined;
   ManageAvailabilityTab: undefined;
-  ManageAppointmentsTab: undefined;
+  ManageAppointmentsTab: {
+    filter?: string;
+  };
 };
 
 export type LoginScreenProps = {
@@ -65,6 +68,10 @@ export type EditProfileScreenProps = {
 
 export type ChangePasswordScreenProps = {
   navigation: StackNavigationProp<RootStackParamList, "ChangePassword">;
+};
+
+export type ScheduleSettingsScreenProps = {
+  navigation: StackNavigationProp<RootStackParamList, "ScheduleSettings">;
 };
 
 export type ManageAvailabilityScreenProps = {

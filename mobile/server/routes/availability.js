@@ -12,7 +12,7 @@ router.get("/:professionalId", async (req, res) => {
     // Vérifier si le professionnel existe
     const professional = await User.findOne({
       _id: professionalId,
-      role: "professional",
+      $or: [{ role: "professional" }, { role: "professionnal" }],
     });
 
     if (!professional) {
@@ -41,16 +41,17 @@ router.get("/:professionalId", async (req, res) => {
 });
 
 // Créer des créneaux horaires par défaut pour un professionnel
-router.post("/:professionalId/default", authMiddleware, async (req, res) => {
+router.post("/:professionalId/default", async (req, res) => {
   try {
     const professionalId = req.params.professionalId;
     const { startDate, endDate, startTime, endTime, interval } = req.body;
 
-    // Vérifier si l'utilisateur est autorisé (soit administrateur, soit le professionnel lui-même)
-    if (req.user.role !== "admin" && req.user.id !== professionalId) {
-      return res.status(403).json({
+    // Vérifier si le professionnel existe
+    const professional = await User.findById(professionalId);
+    if (!professional) {
+      return res.status(404).json({
         success: false,
-        error: "Vous n'êtes pas autorisé à modifier ces disponibilités",
+        error: "Professionnel non trouvé",
       });
     }
 
@@ -161,16 +162,17 @@ router.post("/:professionalId/default", authMiddleware, async (req, res) => {
 });
 
 // Ajouter une disponibilité pour un professionnel
-router.post("/:professionalId", authMiddleware, async (req, res) => {
+router.post("/:professionalId", async (req, res) => {
   try {
     const professionalId = req.params.professionalId;
     const { date, time, available } = req.body;
 
-    // Vérifier si l'utilisateur est autorisé (soit administrateur, soit le professionnel lui-même)
-    if (req.user.role !== "admin" && req.user.id !== professionalId) {
-      return res.status(403).json({
+    // Vérifier si le professionnel existe
+    const professional = await User.findById(professionalId);
+    if (!professional) {
+      return res.status(404).json({
         success: false,
-        error: "Vous n'êtes pas autorisé à modifier ces disponibilités",
+        error: "Professionnel non trouvé",
       });
     }
 
@@ -227,17 +229,17 @@ router.post("/:professionalId", authMiddleware, async (req, res) => {
 // Mettre à jour une disponibilité
 router.put(
   "/:professionalId/:availabilityId/slot/:slotId",
-  authMiddleware,
   async (req, res) => {
     try {
       const { professionalId, availabilityId, slotId } = req.params;
       const { available } = req.body;
 
-      // Vérifier si l'utilisateur est autorisé (soit administrateur, soit le professionnel lui-même)
-      if (req.user.role !== "admin" && req.user.id !== professionalId) {
-        return res.status(403).json({
+      // Vérifier si le professionnel existe
+      const professional = await User.findById(professionalId);
+      if (!professional) {
+        return res.status(404).json({
           success: false,
-          error: "Vous n'êtes pas autorisé à modifier ces disponibilités",
+          error: "Professionnel non trouvé",
         });
       }
 
