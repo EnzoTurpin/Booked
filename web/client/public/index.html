@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>Booked - Système de réservation</title>
+
+    <!-- Styles spécifiques pour les selects -->
+    <style>
+      /* Injection CSS directement dans le HEAD pour maximiser la priorité */
+      select option:hover,
+      select option:focus,
+      select option:active {
+        background-color: #c5d1c0 !important;
+        color: #5d4037 !important;
+        box-shadow: 0 0 10px 100px #c5d1c0 inset !important;
+      }
+
+      /* Override très agressif */
+      @supports (color: var(--test)) {
+        /* Sélecteur plus spécifique pour augmenter la priorité */
+        html body select.native-select-green-hover option:hover,
+        html body select.native-select-green-hover option:focus {
+          background-color: #c5d1c0 !important;
+          color: #5d4037 !important;
+          box-shadow: 0 0 10px 100px #c5d1c0 inset !important;
+        }
+      }
+    </style>
+
+    <!-- Script amélioré pour corriger le hover des options select -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // On crée un styleSheet dédié pour nos overrides
+        const styleEl = document.createElement("style");
+        document.head.appendChild(styleEl);
+        const styleSheet = styleEl.sheet;
+
+        // Ajout de règles avec priorité maximale
+        styleSheet.insertRule(
+          `select option:hover { background-color: #C5D1C0 !important; color: #5D4037 !important; }`,
+          0
+        );
+        styleSheet.insertRule(
+          `select option:focus { background-color: #C5D1C0 !important; color: #5D4037 !important; }`,
+          0
+        );
+
+        // Remplacement des listes déroulantes par une solution sur mesure
+        function createCustomSelectDropdowns() {
+          // Cette fonction s'exécute une fois pour remplacer tous les select natifs
+          // qui ont la classe native-select-green-hover
+          const selects = document.querySelectorAll(
+            ".native-select-green-hover"
+          );
+
+          selects.forEach((select) => {
+            // 1. Création des événements pour intercepter l'ouverture du select
+            select.addEventListener("mousedown", function (e) {
+              // On modifie le comportement avant l'ouverture du menu
+              // Cette technique est une solution de dernier recours
+
+              // On applique un style directement au runtime
+              const tempStyle = document.createElement("style");
+              tempStyle.innerHTML = `
+                select.native-select-green-hover option:hover,
+                select.native-select-green-hover option:focus,
+                select.native-select-green-hover option:active,
+                select.native-select-green-hover option::selection {
+                  background-color: #C5D1C0 !important;
+                  color: #5D4037 !important;
+                  -webkit-appearance: none;
+                  box-shadow: 0 0 0 30px #C5D1C0 inset !important;
+                }
+              `;
+              document.head.appendChild(tempStyle);
+
+              // Astuce: On ajoute un dataset pour tracker ce select spécifiquement
+              this.dataset.customized = "true";
+            });
+          });
+        }
+
+        // Application de notre solution personnalisée
+        createCustomSelectDropdowns();
+
+        // Observer le DOM pour les changements (pour les selects ajoutés dynamiquement)
+        const observer = new MutationObserver(function (mutations) {
+          createCustomSelectDropdowns();
+        });
+
+        observer.observe(document.body, {
+          childList: true,
+          subtree: true,
+        });
+
+        // Hack pour forcer la mise à jour des styles quand le focus change
+        document.addEventListener("focusin", function (e) {
+          if (e.target.tagName === "SELECT") {
+            // Force le rafraîchissement des styles
+            const tempStyle = document.createElement("style");
+            tempStyle.innerHTML = `
+              select option:hover, select option:focus {
+                background-color: #C5D1C0 !important;
+                color: #5D4037 !important;
+              }
+            `;
+            document.head.appendChild(tempStyle);
+
+            // On le supprime après un court délai
+            setTimeout(() => {
+              if (document.head.contains(tempStyle)) {
+                document.head.removeChild(tempStyle);
+              }
+            }, 100);
+          }
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development process, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>
