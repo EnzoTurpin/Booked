@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Appointment = require("../models/appointment");
 const Availability = require("../models/availability");
+const { protect } = require("../middlewares/authMiddleware");
 
 // GET all appointments
 router.get("/", async (req, res) => {
@@ -28,6 +29,56 @@ router.get("/user/:userId", async (req, res) => {
   }
 });
 
+// GET appointments for the currently logged in user
+router.get("/my-appointments", protect, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Non authentifié. Veuillez vous reconnecter.",
+      });
+    }
+
+    const userId = req.user.id;
+
+    const appointments = await Appointment.find({ userId })
+      .populate("serviceId")
+      .populate("professionalId");
+
+    // Formater les rendez-vous pour le front-end
+    const formattedAppointments = appointments.map((appointment) => ({
+      _id: appointment._id,
+      date: appointment.date,
+      time: appointment.time,
+      duration: appointment.duration || 30,
+      status: appointment.status,
+      professional: appointment.professionalId
+        ? {
+            _id: appointment.professionalId._id,
+            firstName: appointment.professionalId.firstName,
+            lastName: appointment.professionalId.lastName,
+            email: appointment.professionalId.email,
+            profession: appointment.professionalId.profession || "",
+          }
+        : null,
+      serviceName: appointment.serviceId
+        ? appointment.serviceId.name
+        : undefined,
+    }));
+
+    res.json({
+      success: true,
+      data: formattedAppointments,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des rendez-vous:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la récupération de vos rendez-vous",
+    });
+  }
+});
+
 // GET a single appointment by ID
 router.get("/:id", async (req, res) => {
   try {
@@ -45,17 +96,10 @@ router.get("/:id", async (req, res) => {
 });
 
 // UPDATE the CREATE route to handle new format without service
-router.post("/", async (req, res) => {
+router.post("/", protect, async (req, res) => {
   try {
     const { professionalId, date, time, status } = req.body;
-    const userId = req.user ? req.user.id : req.body.userId; // Get from authenticated user or body
-
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "L'ID utilisateur est requis",
-      });
-    }
+    const userId = req.user.id; // Récupérer l'ID de l'utilisateur connecté
 
     if (!professionalId || !date || !time) {
       return res.status(400).json({
@@ -126,14 +170,31 @@ router.post("/", async (req, res) => {
     // Save the appointment
     const savedAppointment = await appointment.save();
 
-    // Nous ne marquons plus le créneau comme indisponible pour permettre
-    // plusieurs rendez-vous avec le même professionnel
-    // timeSlot.available = false;
-    // await availability.save();
+    // Marquer le créneau comme indisponible après réservation
+    const updatedAvailability = await Availability.findOne({
+      professionalId,
+      date: dateString,
+    });
+
+    const timeSlot = updatedAvailability.slots.find(
+      (slot) => slot.time === time
+    );
+    if (timeSlot) {
+      timeSlot.available = false;
+      await updatedAvailability.save();
+      console.log(
+        `Créneau ${time} marqué comme indisponible pour ${professionalId} le ${dateString}`
+      );
+    } else {
+      console.log(
+        `Créneau ${time} non trouvé dans la disponibilité de ${professionalId} le ${dateString}`
+      );
+    }
 
     res.status(201).json({
       success: true,
       data: savedAppointment,
+      message: "Rendez-vous créé avec succès",
     });
   } catch (error) {
     console.error("Erreur lors de la création du rendez-vous:", error);

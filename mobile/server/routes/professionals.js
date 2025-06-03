@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { protect: authMiddleware } = require("../middlewares/authMiddleware");
 const Professional = require("../models/professional");
-const User = require("../models/user");
+const User = require("../models/User");
 const Appointment = require("../models/appointment");
 const Availability = require("../models/availability");
 

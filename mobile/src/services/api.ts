@@ -45,6 +45,21 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     console.log("Réponse reçue:", response.status);
+
+    // Si la réponse contient un utilisateur banni lors de la connexion ou de la récupération du profil
+    if (response.data?.user?.isBanned || response.data?.data?.isBanned) {
+      console.log("Utilisateur connecté avec statut banni détecté");
+
+      // Si c'est une connexion, on accepte la réponse pour que le contexte d'authentification puisse
+      // traiter l'utilisateur banni et le rediriger vers BannedUserScreen
+      if (
+        response.config.url === "/auth/login" ||
+        response.config.url === "/auth/me"
+      ) {
+        return response;
+      }
+    }
+
     return response;
   },
   async (error) => {
@@ -84,9 +99,38 @@ api.interceptors.response.use(
       }
     } else if (
       error.response?.status === 403 &&
-      error.response.data?.isBanned
+      error.config.url === "/auth/login" &&
+      error.response.data?.error === "Votre compte a été suspendu"
     ) {
-      console.error("Utilisateur banni");
+      // Pour les erreurs 403 durant la connexion concernant les utilisateurs bannis,
+      // on transforme la réponse pour simuler une connexion réussie avec isBanned=true
+      console.log(
+        "Connexion d'un utilisateur banni détectée, transformation de la réponse"
+      );
+
+      // Essayons de récupérer l'email et le mot de passe de la requête originale
+      const requestData = JSON.parse(error.config.data);
+
+      // On retourne une réponse positive mais avec un utilisateur marqué comme banni
+      return {
+        data: {
+          success: true,
+          token: "banned-user-token", // Token temporaire pour la session
+          user: {
+            _id: "banned-user",
+            email: requestData.email,
+            firstName: "Utilisateur",
+            lastName: "Banni",
+            isEmailVerified: true,
+            isBanned: true, // Marquer comme banni
+            hasUnbanRequest: false,
+          },
+        },
+        status: 200,
+        statusText: "OK",
+        headers: error.response.headers,
+        config: error.config,
+      };
     }
 
     return Promise.reject(error);

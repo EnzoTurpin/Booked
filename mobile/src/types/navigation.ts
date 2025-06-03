@@ -14,6 +14,18 @@ export type RootStackParamList = {
     email?: string;
   };
   ScheduleSettings: undefined;
+  AdminUsers: undefined;
+  AdminProfessionals: undefined;
+  AdminAppointments: undefined;
+  AdminStats: undefined;
+  AdminUnbanRequests: undefined;
+  AdminEditUser: {
+    userId: string;
+  };
+  AdminEditProfessional: {
+    professionalId: string;
+  };
+  BannedUser: undefined;
 };
 
 export type TabNavigatorParamList = {
@@ -25,6 +37,12 @@ export type TabNavigatorParamList = {
   ManageAppointmentsTab: {
     filter?: string;
   };
+  AdminDashboardTab: undefined;
+  AdminUsersTab: undefined;
+  AdminProfessionalsTab: undefined;
+  AdminAppointmentsTab: undefined;
+  AdminStatsTab: undefined;
+  AdminUnbanRequestsTab: undefined;
 };
 
 export type LoginScreenProps = {
@@ -85,5 +103,30 @@ export type ManageAppointmentsScreenProps = {
   navigation: BottomTabNavigationProp<
     TabNavigatorParamList,
     "ManageAppointmentsTab"
+  >;
+};
+
+export type AdminDashboardScreenProps = {
+  navigation: BottomTabNavigationProp<
+    TabNavigatorParamList,
+    "AdminDashboardTab"
+  >;
+};
+
+export type AdminUsersScreenProps = {
+  navigation: BottomTabNavigationProp<TabNavigatorParamList, "AdminUsersTab">;
+};
+
+export type AdminProfessionalsScreenProps = {
+  navigation: BottomTabNavigationProp<
+    TabNavigatorParamList,
+    "AdminProfessionalsTab"
+  >;
+};
+
+export type AdminAppointmentsScreenProps = {
+  navigation: BottomTabNavigationProp<
+    TabNavigatorParamList,
+    "AdminAppointmentsTab"
   >;
 };

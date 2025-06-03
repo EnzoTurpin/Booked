@@ -69,9 +69,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             email: result.email || email,
           });
         }
-        // On supprime la navigation explicite vers Main
-        // Le RootNavigator va s'occuper de rediriger l'utilisateur
-        // basé sur les changements d'état et token
+        // Note: la redirection vers l'écran banni sera gérée automatiquement par le RootNavigator
+        // quand il détectera que user.isBanned est true
       } catch (error: any) {
         // Gérer d'autres erreurs potentielles
         console.log("Erreur lors de la connexion:", error);

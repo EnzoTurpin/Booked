@@ -2,12 +2,13 @@ const express = require("express");
 const router = express.Router();
 const { protect: authMiddleware } = require("../middlewares/authMiddleware");
 const Availability = require("../models/availability");
-const User = require("../models/user");
+const User = require("../models/User");
 
 // Récupérer les disponibilités d'un professionnel par son ID
 router.get("/:professionalId", async (req, res) => {
   try {
     const professionalId = req.params.professionalId;
+    const onlyAvailable = req.query.available === "true";
 
     // Vérifier si le professionnel existe
     const professional = await User.findOne({
@@ -26,6 +27,24 @@ router.get("/:professionalId", async (req, res) => {
     const availabilities = await Availability.find({
       professionalId: professionalId,
     });
+
+    // Si le paramètre available=true est présent, filtrer pour ne renvoyer que les créneaux disponibles
+    if (onlyAvailable) {
+      const filteredAvailabilities = availabilities.map((avail) => {
+        const filteredSlots = avail.slots.filter(
+          (slot) => slot.available === true
+        );
+        return {
+          ...avail.toObject(),
+          slots: filteredSlots,
+        };
+      });
+
+      return res.json({
+        success: true,
+        data: filteredAvailabilities,
+      });
+    }
 
     res.json({
       success: true,

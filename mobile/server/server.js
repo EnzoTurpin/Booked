@@ -21,6 +21,14 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Middleware pour empêcher la mise en cache des réponses
+app.use((req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+});
+
 // Import routes
 const bookingRoutes = require("./routes/bookings");
 const roomRoutes = require("./routes/rooms");
@@ -34,6 +42,7 @@ const unbanRequestRoutes = require("./routes/unbanrequests");
 const verificationTokenRoutes = require("./routes/verificationtokens");
 const authRoutes = require("./routes/auth");
 const availabilityRoutes = require("./routes/availability");
+const adminRoutes = require("./routes/admin");
 
 // Use routes
 app.use("/api/bookings", bookingRoutes);
@@ -48,6 +57,7 @@ app.use("/api/unbanrequests", unbanRequestRoutes);
 app.use("/api/verificationtokens", verificationTokenRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/availability", availabilityRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Route simple pour vérifier si l'API est en ligne
 app.get("/api/status", (req, res) => {
@@ -73,6 +83,30 @@ mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {
     console.log("Connected to MongoDB");
+
+    // Middleware global pour s'assurer que isActive et isApproved sont toujours définis
+    const db = mongoose.connection.db;
+    const usersCollection = db.collection("users");
+
+    // Intercepter les opérations d'insertion
+    const originalInsertOne = usersCollection.insertOne;
+    usersCollection.insertOne = function (doc, options) {
+      // S'assurer que isActive est défini
+      if (doc.isActive === undefined) {
+        doc.isActive = true;
+      }
+
+      // S'assurer que isApproved est défini et basé sur le rôle
+      if (doc.isApproved === undefined) {
+        doc.isApproved =
+          doc.role === "professional" || doc.role === "professionnal"
+            ? false
+            : true;
+      }
+
+      return originalInsertOne.call(this, doc, options);
+    };
+
     // Start server after successful DB connection
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);

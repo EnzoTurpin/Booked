@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const UnbanRequest = require("../models/unbanrequest");
+const User = require("../models/User");
 
 // GET all unban requests
 router.get("/", async (req, res) => {
@@ -76,7 +77,6 @@ router.put("/:id", async (req, res) => {
 
     // If the request is approved, unban the user
     if (req.body.status === "approved") {
-      const User = require("../models/user");
       await User.findByIdAndUpdate(updatedUnbanRequest.userId, {
         isBanned: false,
       });

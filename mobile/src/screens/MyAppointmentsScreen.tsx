@@ -124,6 +124,20 @@ const MyAppointmentsScreen: React.FC = () => {
     []
   );
 
+  // Ajouter un écouteur pour rafraîchir les données lorsque l'écran devient actif
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      console.log(
+        "MyAppointmentsScreen devient actif, rafraîchissement des données"
+      );
+      if (user && user.id) {
+        fetchAppointmentsFromMongoDB(user.id);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, user]);
+
   useEffect(() => {
     if (user && user.id) {
       fetchAppointmentsFromMongoDB(user.id);

@@ -9,7 +9,7 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const path = require("path");
 const Availability = require("../models/availability");
-const User = require("../models/user");
+const User = require("../models/User");
 
 // Charger les variables d'environnement avec un chemin absolu
 dotenv.config({ path: path.resolve(__dirname, "../.env") });

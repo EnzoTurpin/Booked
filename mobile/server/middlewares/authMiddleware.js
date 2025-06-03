@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/user");
+const User = require("../models/User");
 
 // Middleware to protect routes
 exports.protect = async (req, res, next) => {
@@ -13,6 +13,13 @@ exports.protect = async (req, res, next) => {
     try {
       // Get token from header
       token = req.headers.authorization.split(" ")[1];
+
+      if (!token || token === "null" || token === "undefined") {
+        return res.status(401).json({
+          success: false,
+          error: "Token invalide ou manquant",
+        });
+      }
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -30,6 +37,15 @@ exports.protect = async (req, res, next) => {
       next();
     } catch (error) {
       console.error("Auth middleware error:", error);
+
+      if (error.name === "TokenExpiredError") {
+        return res.status(401).json({
+          success: false,
+          error: "Session expirée, veuillez vous reconnecter",
+          expired: true,
+        });
+      }
+
       return res
         .status(401)
         .json({ success: false, error: "Non autorisé, token invalide" });

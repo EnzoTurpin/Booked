@@ -11,12 +11,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type User = {
   id: string;
+  _id?: string; // Pour compatibilité avec l'API
   email: string;
   firstName: string;
   lastName: string;
   isEmailVerified?: boolean;
   phone?: string;
   role: "client" | "professional" | "professionnal" | "admin";
+  isBanned?: boolean;
+  hasUnbanRequest?: boolean;
+  unbanRequestReason?: string;
+  unbanRequestDate?: Date | null;
+  isActive?: boolean;
+  isApproved?: boolean;
 };
 
 type AuthContextType = {
@@ -80,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (response.data.success) {
           const userData = {
             id: response.data.data._id,
+            _id: response.data.data._id,
             email: response.data.data.email,
             firstName: response.data.data.firstName,
             lastName: response.data.data.lastName,
@@ -90,6 +98,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               | "professional"
               | "professionnal"
               | "admin",
+            isBanned: response.data.data.isBanned || false,
+            hasUnbanRequest: response.data.data.hasUnbanRequest || false,
+            unbanRequestReason: response.data.data.unbanRequestReason || "",
+            unbanRequestDate: response.data.data.unbanRequestDate || null,
+            isActive: response.data.data.isActive,
+            isApproved: response.data.data.isApproved,
           };
 
           setUserState(userData);
@@ -181,6 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // Créer l'objet utilisateur à partir des données de réponse
         const userData = {
           id: response.data.user._id,
+          _id: response.data.user._id,
           email: response.data.user.email,
           firstName: response.data.user.firstName,
           lastName: response.data.user.lastName,
@@ -191,6 +206,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             | "professional"
             | "professionnal"
             | "admin",
+          isBanned: response.data.user.isBanned || false,
+          hasUnbanRequest: response.data.user.hasUnbanRequest || false,
+          unbanRequestReason: response.data.user.unbanRequestReason || "",
+          unbanRequestDate: response.data.user.unbanRequestDate || null,
+          isActive: response.data.user.isActive,
+          isApproved: response.data.user.isApproved,
         };
 
         // Définir l'utilisateur directement sans utiliser loadUser
@@ -288,6 +309,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           // Créer l'objet utilisateur à partir des données de réponse
           const userData = {
             id: response.data.user._id,
+            _id: response.data.user._id,
             email: response.data.user.email,
             firstName: response.data.user.firstName || data.firstName,
             lastName: response.data.user.lastName || data.lastName,
@@ -298,6 +320,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               | "professional"
               | "professionnal"
               | "admin",
+            isBanned: response.data.user.isBanned || false,
+            hasUnbanRequest: response.data.user.hasUnbanRequest || false,
+            unbanRequestReason: response.data.user.unbanRequestReason || "",
+            unbanRequestDate: response.data.user.unbanRequestDate || null,
+            isActive: response.data.user.isActive,
+            isApproved: response.data.user.isApproved,
           };
 
           setUserState(userData);
@@ -412,6 +440,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (response.data.success) {
         const userData = {
           id: response.data.data._id,
+          _id: response.data.data._id,
           email: response.data.data.email,
           firstName: response.data.data.firstName,
           lastName: response.data.data.lastName,
@@ -422,6 +451,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             | "professional"
             | "professionnal"
             | "admin",
+          isBanned: response.data.data.isBanned || false,
+          hasUnbanRequest: response.data.data.hasUnbanRequest || false,
+          unbanRequestReason: response.data.data.unbanRequestReason || "",
+          unbanRequestDate: response.data.data.unbanRequestDate || null,
+          isActive: response.data.data.isActive,
+          isApproved: response.data.data.isApproved,
         };
 
         setUserState(userData);

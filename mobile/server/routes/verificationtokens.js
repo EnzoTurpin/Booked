@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const VerificationToken = require("../models/verificationtoken");
-const User = require("../models/user");
+const User = require("../models/User");
 
 // Cette route devrait être protégée et accessible uniquement par les administrateurs
 // GET all verification tokens

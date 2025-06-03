@@ -37,18 +37,6 @@ const userSchema = new Schema(
       trim: true,
       default: "",
     },
-    profileImage: {
-      type: String,
-      default: "",
-    },
-    profession: {
-      type: String,
-      default: "",
-    },
-    bio: {
-      type: String,
-      default: "",
-    },
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -56,6 +44,22 @@ const userSchema = new Schema(
     isBanned: {
       type: Boolean,
       default: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
+    hasUnbanRequest: {
+      type: Boolean,
+      default: false,
+    },
+    unbanRequestDate: {
+      type: Date,
+      default: null,
     },
     emailVerificationToken: {
       type: String,
@@ -88,9 +92,50 @@ userSchema.pre("save", async function (next) {
   }
 });
 
+// Middleware pour s'assurer que isActive et isApproved sont toujours définis
+userSchema.pre("save", function (next) {
+  // S'assurer que isActive est défini
+  if (this.isActive === undefined) {
+    this.isActive = true;
+  }
+
+  // S'assurer que isApproved est défini et basé sur le rôle
+  if (this.isApproved === undefined) {
+    this.isApproved =
+      this.role === "professional" || this.role === "professionnal"
+        ? false
+        : true;
+  }
+
+  next();
+});
+
 // Method to compare password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Méthode statique pour s'assurer que les champs requis sont présents lors de la création
+userSchema.statics.createWithDefaults = async function (userData) {
+  // Supprimer les champs inutilisés s'ils sont présents
+  delete userData.profileImage;
+  delete userData.profession;
+  delete userData.bio;
+
+  // S'assurer que isActive est défini
+  if (userData.isActive === undefined) {
+    userData.isActive = true;
+  }
+
+  // S'assurer que isApproved est défini et basé sur le rôle
+  if (userData.isApproved === undefined) {
+    userData.isApproved =
+      userData.role === "professional" || userData.role === "professionnal"
+        ? false
+        : true;
+  }
+
+  return this.create(userData);
 };
 
 module.exports = mongoose.model("User", userSchema);

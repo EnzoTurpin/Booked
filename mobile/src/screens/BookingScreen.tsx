@@ -86,10 +86,45 @@ const BookingScreen: React.FC = () => {
 
   const [weeklySchedule, setWeeklySchedule] = useState<any>(null);
 
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(
+    null
+  );
+
   useEffect(() => {
     // Charger les professionnels au démarrage
     fetchProfessionals();
+
+    // Mettre en place une actualisation périodique des disponibilités
+    // pour s'assurer que l'utilisateur voit toujours les créneaux à jour
+    if (selectedProfessional) {
+      const interval = setInterval(() => {
+        fetchAvailabilities();
+      }, 10000); // Actualiser toutes les 10 secondes
+      setRefreshInterval(interval);
+    }
+
+    return () => {
+      // Nettoyer l'intervalle lors du démontage du composant
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    // Nettoyer l'ancien intervalle et en créer un nouveau si nécessaire
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      setRefreshInterval(null);
+    }
+
+    if (selectedProfessional) {
+      const interval = setInterval(() => {
+        fetchAvailabilities();
+      }, 10000); // Actualiser toutes les 10 secondes
+      setRefreshInterval(interval);
+    }
+  }, [selectedProfessional]);
 
   useEffect(() => {
     // Récupérer les disponibilités lorsque le professionnel est sélectionné
@@ -160,7 +195,9 @@ const BookingScreen: React.FC = () => {
     try {
       // Récupérer les disponibilités depuis l'API
       try {
-        const response = await api.get(`/availability/${selectedProfessional}`);
+        const response = await api.get(
+          `/availability/${selectedProfessional}?available=true`
+        );
         console.log(
           "Réponse disponibilités (si disponible):",
           JSON.stringify(response.data)
@@ -260,7 +297,7 @@ const BookingScreen: React.FC = () => {
       };
 
       setWeeklySchedule(localSchedule);
-      filterAvailableTimeSlots(localSchedule, englishDay);
+      await filterAvailableTimeSlots(localSchedule, englishDay);
 
       // Simuler un court délai pour l'expérience utilisateur
       setTimeout(() => {
@@ -269,12 +306,12 @@ const BookingScreen: React.FC = () => {
     } catch (error) {
       console.error("Erreur lors du traitement des horaires:", error);
       // Par défaut, utiliser tous les créneaux standards
-      filterAvailableTimeSlots(null, dayOfWeek);
+      await filterAvailableTimeSlots(null, dayOfWeek);
       setLoadingSlots(false);
     }
   };
 
-  const filterAvailableTimeSlots = (schedule: any, dayOfWeek: string) => {
+  const filterAvailableTimeSlots = async (schedule: any, dayOfWeek: string) => {
     const dateString = format(selectedDate, "yyyy-MM-dd");
 
     // Vérifier si le jour est ouvert selon l'emploi du temps hebdomadaire
@@ -309,6 +346,43 @@ const BookingScreen: React.FC = () => {
       filteredTimeSlots.map((s) => s.time)
     );
 
+    try {
+      // Récupérer tous les rendez-vous pour cette date et ce professionnel
+      const appointmentsResponse = await api.get(
+        `/appointments/professional/${selectedProfessional}`
+      );
+
+      if (appointmentsResponse.data) {
+        // Filtrer pour obtenir uniquement les rendez-vous pour la date sélectionnée
+        const appointmentsForDay = Array.isArray(appointmentsResponse.data)
+          ? appointmentsResponse.data.filter(
+              (apt: any) => apt.date === dateString
+            )
+          : (appointmentsResponse.data.data || []).filter(
+              (apt: any) => apt.date === dateString
+            );
+
+        console.log(
+          "Rendez-vous existants pour cette date:",
+          appointmentsForDay
+        );
+
+        // Filtrer pour exclure les créneaux qui ont déjà un rendez-vous
+        if (appointmentsForDay.length > 0) {
+          filteredTimeSlots = filteredTimeSlots.filter((slot) => {
+            // Retourner true seulement si aucun rendez-vous n'existe pour ce créneau
+            const isBooked = appointmentsForDay.some(
+              (apt: any) => apt.time === slot.time
+            );
+            return !isBooked;
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors de la vérification des rendez-vous:", error);
+      // Continuer avec les données que nous avons déjà
+    }
+
     // Vérifier si nous avons des disponibilités spécifiques pour cette date
     console.log(
       "Dates disponibles:",
@@ -326,7 +400,7 @@ const BookingScreen: React.FC = () => {
       availabilityForDate ? "trouvées" : "non trouvées"
     );
 
-    // Si nous avons des disponibilités spécifiques, mettre à jour uniquement les créneaux indisponibles
+    // Si nous avons des disponibilités spécifiques, ne garder que les créneaux disponibles
     if (availabilityForDate && availabilityForDate.slots.length > 0) {
       console.log(
         "Créneaux dans la base de données:",
@@ -335,35 +409,29 @@ const BookingScreen: React.FC = () => {
         )
       );
 
-      // Mettre à jour les créneaux avec les données de la base de données, mais uniquement pour marquer les indisponibles
-      filteredTimeSlots = filteredTimeSlots.map((slot) => {
+      // Filtrer pour exclure les créneaux marqués comme indisponibles dans la base de données
+      filteredTimeSlots = filteredTimeSlots.filter((slot) => {
         // Chercher si ce créneau existe dans la base de données
         const existingSlot = availabilityForDate.slots.find(
           (s) => s.time === slot.time
         );
 
-        if (existingSlot) {
-          // Si le créneau existe dans la base, utiliser sa disponibilité
-          return {
-            _id: existingSlot._id || `temp-${slot.time}`,
-            time: slot.time,
-            available: existingSlot.available,
-          };
+        // Si le créneau existe et est marqué comme indisponible, l'exclure
+        if (existingSlot && !existingSlot.available) {
+          return false;
         }
-        // Si le créneau n'existe pas dans la base, le garder comme disponible par défaut
-        return slot;
+
+        // Sinon, le garder
+        return true;
       });
     } else {
       console.log(
-        "Pas de disponibilités spécifiques pour cette date, tous les créneaux des horaires d'ouverture sont disponibles"
+        "Pas de disponibilités spécifiques pour cette date, utilisation des créneaux par défaut"
       );
     }
 
-    // Filtrer pour ne garder que les créneaux disponibles
-    const availableSlots = filteredTimeSlots.filter((slot) => slot.available);
-
     // Trier les créneaux par heure
-    const sortedSlots = availableSlots.sort((a, b) => {
+    const sortedSlots = filteredTimeSlots.sort((a, b) => {
       const timeA = a.time.split(":").map(Number);
       const timeB = b.time.split(":").map(Number);
 
@@ -389,6 +457,12 @@ const BookingScreen: React.FC = () => {
     if (selectedDate) {
       setSelectedDate(selectedDate);
       setSelectedTimeSlot("");
+
+      // Rafraîchir les disponibilités à chaque changement de date
+      if (selectedProfessional) {
+        setLoadingSlots(true);
+        fetchAvailabilities();
+      }
     }
   };
 
@@ -505,6 +579,28 @@ const BookingScreen: React.FC = () => {
         "Créneau dans les horaires d'ouverture, tentative de création du rendez-vous"
       );
 
+      // Marquer le créneau comme indisponible immédiatement dans l'état local
+      setAvailableSlots((prevSlots) =>
+        prevSlots.filter((slot) => slot.time !== timeToSend)
+      );
+
+      // Si nous avons des disponibilités pour cette date, mettre à jour la disponibilité dans l'état local
+      if (availabilityForDate) {
+        const updatedAvailabilities = availabilities.map((availability) => {
+          if (availability.date === appointmentDate) {
+            const updatedSlots = availability.slots.map((slot) => {
+              if (slot.time === timeToSend) {
+                return { ...slot, available: false };
+              }
+              return slot;
+            });
+            return { ...availability, slots: updatedSlots };
+          }
+          return availability;
+        });
+        setAvailabilities(updatedAvailabilities);
+      }
+
       // Tentative de création de rendez-vous
       try {
         const response = await api.post("/appointments", {
@@ -516,9 +612,19 @@ const BookingScreen: React.FC = () => {
         });
 
         if (response.data) {
-          // Réinitialiser le formulaire
-          setSelectedProfessional("");
-          setSelectedDate(new Date());
+          // Force une actualisation des disponibilités auprès du serveur
+          await fetchAvailabilities();
+
+          // Actualiser l'affichage des créneaux disponibles pour garantir que le créneau vient de disparaître
+          const dayOfWeek = format(selectedDate, "EEEE", {
+            locale: fr,
+          }).toLowerCase();
+          const englishDay = dayMap[dayOfWeek] || dayOfWeek;
+
+          // Actualiser les créneaux avec la nouvelle disponibilité
+          fetchProfessionalSchedule(englishDay);
+
+          // Réinitialiser le formulaire et passer à l'écran de confirmation
           setSelectedTimeSlot("");
           setCurrentStep(3); // Étape de confirmation
 
@@ -533,6 +639,9 @@ const BookingScreen: React.FC = () => {
           "Erreur API lors de la création du rendez-vous:",
           apiError
         );
+
+        // En cas d'erreur, rétablir l'état précédent
+        await fetchAvailabilities();
 
         // Afficher l'erreur réelle au lieu de simuler un succès
         let errorMessage = "Impossible de créer le rendez-vous";
@@ -750,6 +859,7 @@ const BookingScreen: React.FC = () => {
         className="bg-sage py-3 px-6 rounded-lg"
         onPress={() => {
           setCurrentStep(1);
+          // Naviguer vers l'écran des rendez-vous
           // @ts-ignore
           navigation.navigate("MyAppointmentsTab");
         }}

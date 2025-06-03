@@ -1,4 +1,4 @@
-const User = require("../models/user");
+const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const VerificationToken = require("../models/verificationtoken");
@@ -96,7 +96,7 @@ exports.register = async (req, res) => {
     expiresAt.setHours(expiresAt.getHours() + 24);
 
     // Create user
-    const user = await User.create({
+    const user = await User.createWithDefaults({
       firstName,
       lastName,
       email,
@@ -104,6 +104,8 @@ exports.register = async (req, res) => {
       isEmailVerified: false,
       emailVerificationToken: verificationCode,
       emailVerificationExpires: expiresAt,
+      isActive: true,
+      isApproved: req.body.role === "professional" ? false : true,
     });
 
     // Envoyer l'email de vérification
@@ -123,10 +125,14 @@ exports.register = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       role: user.role,
-      profileImage: user.profileImage,
       isEmailVerified: user.isEmailVerified,
       phone: user.phone || "",
       createdAt: user.createdAt,
+      isBanned: user.isBanned,
+      hasUnbanRequest: user.hasUnbanRequest,
+      unbanRequestDate: user.unbanRequestDate,
+      isActive: user.isActive,
+      isApproved: user.isApproved,
     };
 
     res.status(201).json({
@@ -155,12 +161,10 @@ exports.login = async (req, res) => {
 
     // Vérifier si le mot de passe existe
     if (!user.password) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          error: "Compte incomplet. Veuillez réinitialiser votre mot de passe.",
-        });
+      return res.status(401).json({
+        success: false,
+        error: "Compte incomplet. Veuillez réinitialiser votre mot de passe.",
+      });
     }
 
     // Check if password matches
@@ -169,13 +173,6 @@ exports.login = async (req, res) => {
       return res
         .status(401)
         .json({ success: false, error: "Email ou mot de passe incorrect" });
-    }
-
-    // Vérifier si l'utilisateur est banni
-    if (user.isBanned) {
-      return res
-        .status(403)
-        .json({ success: false, error: "Votre compte a été suspendu" });
     }
 
     // Vérifier si l'email est vérifié
@@ -222,10 +219,14 @@ exports.login = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       role: user.role,
-      profileImage: user.profileImage,
       isEmailVerified: user.isEmailVerified,
       phone: user.phone || "",
       createdAt: user.createdAt,
+      isBanned: user.isBanned,
+      hasUnbanRequest: user.hasUnbanRequest,
+      unbanRequestDate: user.unbanRequestDate,
+      isActive: user.isActive,
+      isApproved: user.isApproved,
     };
 
     res.status(200).json({
@@ -278,10 +279,14 @@ exports.verifyEmail = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       role: user.role,
-      profileImage: user.profileImage,
       isEmailVerified: true,
       phone: user.phone || "",
       createdAt: user.createdAt,
+      isBanned: user.isBanned,
+      hasUnbanRequest: user.hasUnbanRequest,
+      unbanRequestDate: user.unbanRequestDate,
+      isActive: user.isActive,
+      isApproved: user.isApproved,
     };
 
     res.status(200).json({
@@ -349,9 +354,33 @@ exports.resendVerificationCode = async (req, res) => {
 // Get current logged in user
 exports.getMe = async (req, res) => {
   try {
+    console.log(
+      `[DEBUG] getMe: Récupération de l'utilisateur avec ID ${req.user.id}`
+    );
     const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      console.log(
+        `[DEBUG] getMe: Utilisateur non trouvé avec ID ${req.user.id}`
+      );
+      return res
+        .status(404)
+        .json({ success: false, error: "Utilisateur non trouvé" });
+    }
+
+    console.log(
+      `[DEBUG] getMe: Utilisateur trouvé ${user.email}, rôle: ${user.role}`
+    );
+    console.log(
+      `[DEBUG] getMe: isApproved=${user.isApproved}, isActive=${user.isActive}`
+    );
+    console.log(
+      `[DEBUG] getMe: Types - isApproved: ${typeof user.isApproved}, isActive: ${typeof user.isActive}`
+    );
+
     res.status(200).json({ success: true, data: user });
   } catch (error) {
+    console.error("Erreur dans getMe:", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };
