@@ -6,12 +6,13 @@ export interface IUnbanRequest extends Document {
   status: "pending" | "approved" | "rejected";
   createdAt: Date;
   updatedAt: Date;
+  getUserIdString(): string;
 }
 
 const unbanRequestSchema = new Schema<IUnbanRequest>(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
@@ -25,8 +26,17 @@ const unbanRequestSchema = new Schema<IUnbanRequest>(
       default: "pending",
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
+
+// Ajouter une méthode pour obtenir l'ID utilisateur sous forme de chaîne
+unbanRequestSchema.methods.getUserIdString = function () {
+  return this.userId.toString();
+};
 
 export default mongoose.model<IUnbanRequest>(
   "UnbanRequest",

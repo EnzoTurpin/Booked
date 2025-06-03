@@ -4,15 +4,18 @@ import { UnbanRequest, User } from "../models";
 // Créer une nouvelle demande de débanissement
 export const createUnbanRequest = async (req: Request, res: Response) => {
   try {
-    const { message } = req.body;
-    const userId = (req as any).userId;
+    const { message, email } = req.body;
 
     if (!message) {
       return res.status(400).json({ message: "Le message est requis" });
     }
 
+    if (!email) {
+      return res.status(400).json({ message: "L'email est requis" });
+    }
+
     // Vérifier si l'utilisateur existe et est banni
-    const user = await User.findById(userId);
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
@@ -25,7 +28,7 @@ export const createUnbanRequest = async (req: Request, res: Response) => {
 
     // Vérifier si l'utilisateur a déjà une demande en attente
     const existingRequest = await UnbanRequest.findOne({
-      userId,
+      userId: user._id,
       status: "pending",
     });
 
@@ -37,7 +40,7 @@ export const createUnbanRequest = async (req: Request, res: Response) => {
 
     // Créer une nouvelle demande
     const newRequest = new UnbanRequest({
-      userId,
+      userId: user._id,
       message,
     });
 
@@ -61,11 +64,11 @@ export const getAllUnbanRequests = async (req: Request, res: Response) => {
     // Transformation pour le frontend
     const formattedRequests = requests.map((request) => ({
       _id: request._id,
-      userId: request.userId._id,
+      userId: request.userId ? request.userId._id : null,
       message: request.message,
       status: request.status,
       createdAt: request.createdAt,
-      user: request.userId,
+      user: request.userId || null,
     }));
 
     res.status(200).json(formattedRequests);
@@ -79,35 +82,74 @@ export const getAllUnbanRequests = async (req: Request, res: Response) => {
 export const approveUnbanRequest = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    console.log(
+      "🔄 [approveUnbanRequest] Starting approval process for request:",
+      id
+    );
 
     const request = await UnbanRequest.findById(id);
+    console.log(
+      "📝 [approveUnbanRequest] Found request:",
+      request ? "yes" : "no"
+    );
+
     if (!request) {
+      console.log("❌ [approveUnbanRequest] Request not found");
       return res.status(404).json({ message: "Demande non trouvée" });
     }
 
+    console.log(
+      "📝 [approveUnbanRequest] Current request status:",
+      request.status
+    );
     if (request.status !== "pending") {
+      console.log("❌ [approveUnbanRequest] Request already processed");
       return res.status(400).json({
         message: "Cette demande a déjà été traitée",
       });
     }
 
-    // Mettre à jour le statut de la demande
-    request.status = "approved";
-    await request.save();
+    // Mettre à jour le statut de la demande en préservant le message
+    await UnbanRequest.findByIdAndUpdate(
+      id,
+      { status: "approved" },
+      { new: true }
+    );
+    console.log("✅ [approveUnbanRequest] Request status updated to approved");
 
     // Débannir l'utilisateur
-    const user = await User.findById(request.userId);
-    if (user) {
-      user.isBanned = false;
-      await user.save();
+    const userId = request.getUserIdString();
+    console.log("🔄 [approveUnbanRequest] Looking for user with ID:", userId);
+
+    const user = await User.findById(userId);
+    console.log("📝 [approveUnbanRequest] Found user:", user ? "yes" : "no");
+
+    if (!user) {
+      console.log("❌ [approveUnbanRequest] User not found");
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
+
+    console.log(
+      "📝 [approveUnbanRequest] Current user ban status:",
+      user.isBanned
+    );
+    user.isBanned = false;
+    await user.save();
+    console.log("✅ [approveUnbanRequest] User successfully unbanned");
 
     res.status(200).json({
       message: "La demande a été approuvée et l'utilisateur a été débanni",
     });
   } catch (error) {
-    console.error("Erreur lors de l'approbation de la demande:", error);
-    res.status(500).json({ message: "Erreur serveur", error });
+    console.error("❌ [approveUnbanRequest] Detailed error:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      error,
+    });
+    res.status(500).json({
+      message: "Erreur serveur",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 };
 

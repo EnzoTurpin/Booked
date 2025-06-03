@@ -5,7 +5,6 @@ export interface IProfessional extends Document {
   userId: IUser["_id"];
   profession: string;
   bio: string;
-  services: mongoose.Types.ObjectId[];
   availability: {
     dayOfWeek: number;
     startTime: string;
@@ -29,7 +28,6 @@ const professionalSchema = new Schema<IProfessional>(
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     profession: { type: String, required: true },
     bio: { type: String, required: true },
-    services: [{ type: Schema.Types.ObjectId, ref: "Service" }],
     availability: [
       {
         dayOfWeek: { type: Number, min: 0, max: 6, required: true }, // 0: Sunday, 1: Monday, etc.

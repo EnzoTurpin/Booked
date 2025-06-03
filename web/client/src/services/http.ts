@@ -39,17 +39,23 @@ axiosInstance.interceptors.response.use(
   },
   (error: AxiosError<ErrorResponseData>) => {
     // Si l'utilisateur est banni (403 Forbidden)
-    if (error.response?.status === 403 && error.response.data?.isBanned) {
-      // Mettre à jour les informations utilisateur avec le flag isBanned
-      const currentUser = authService.getCurrentUser();
-      if (currentUser) {
-        const bannedUser = { ...currentUser, isBanned: true };
-        localStorage.setItem("user", JSON.stringify(bannedUser));
+    if (error.response?.status === 403) {
+      if (error.response.data?.isBanned) {
+        // Mettre à jour les informations utilisateur avec le flag isBanned
+        const currentUser = authService.getCurrentUser();
+        if (currentUser) {
+          const bannedUser = { ...currentUser, isBanned: true };
+          localStorage.setItem("user", JSON.stringify(bannedUser));
 
-        // Rediriger vers la page "Banni" si on n'y est pas déjà
-        if (window.location.pathname !== "/banned") {
-          window.location.href = "/banned";
+          // Rediriger vers la page "Banni" si on n'y est pas déjà
+          if (window.location.pathname !== "/banned") {
+            window.location.href = "/banned";
+          }
         }
+      } else {
+        // Erreur de permission (non liée au bannissement)
+        console.error("Erreur de permission:", error.response?.data?.message);
+        // Ne pas rediriger, laisser le composant gérer l'erreur
       }
     }
 

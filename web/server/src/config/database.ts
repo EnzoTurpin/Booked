@@ -3,11 +3,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// Pour configurer votre base de données MongoDB:
-// 1. Créez un fichier .env à la racine du dossier server
-// 2. Ajoutez la ligne: MONGODB_URI=votre_url_mongodb_atlas
-// Exemple: MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/booked
-// Ou laissez la valeur par défaut pour utiliser MongoDB en local
 const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/reservation-system";
 

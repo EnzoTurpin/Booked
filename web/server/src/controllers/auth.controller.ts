@@ -48,6 +48,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Créer le token JWT
+    console.log("JWT_SECRET utilisé pour SIGNER :", JWT_SECRET);
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role },
       JWT_SECRET,
@@ -250,62 +251,6 @@ export const changePassword = async (req: Request, res: Response) => {
     console.error("Erreur lors du changement de mot de passe:", error);
     res.status(500).json({
       message: "Une erreur est survenue lors du changement de mot de passe",
-    });
-  }
-};
-
-// Fonction d'inscription pour les nouveaux utilisateurs
-export const register = async (req: Request, res: Response) => {
-  try {
-    const { firstName, lastName, email, password, phone } = req.body;
-
-    // Vérifier si l'email existe déjà
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({
-        message: "Un compte avec cet email existe déjà",
-      });
-    }
-
-    // Créer un nouveau token de vérification
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-
-    // Créer le nouvel utilisateur
-    const user = new User({
-      firstName,
-      lastName,
-      email,
-      password,
-      phone,
-      verificationToken,
-      isEmailVerified: false,
-    });
-
-    // Sauvegarder l'utilisateur
-    await user.save();
-
-    // Créer le lien de vérification
-    const verificationLink = `${
-      process.env.CLIENT_URL || "http://localhost:3000"
-    }/verify-email?token=${verificationToken}&email=${encodeURIComponent(
-      user.email
-    )}`;
-
-    // Envoyer l'email de vérification
-    await emailService.sendVerificationEmail(
-      user.email,
-      user.firstName,
-      verificationLink
-    );
-
-    res.status(201).json({
-      message:
-        "Compte créé avec succès. Veuillez vérifier votre email pour activer votre compte.",
-    });
-  } catch (error) {
-    console.error("Erreur lors de l'inscription:", error);
-    res.status(500).json({
-      message: "Une erreur est survenue lors de la création du compte",
     });
   }
 };

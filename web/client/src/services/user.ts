@@ -97,19 +97,34 @@ const userService = {
     }
   },
 
-  // Submit unban request (for banned users)
+  // Soumettre une demande de déban
   submitUnbanRequest: async (message: string): Promise<{ message: string }> => {
     try {
-      const response = await http.post("/unban-requests", { message });
+      const currentUser = authService.getCurrentUser();
+      console.log(
+        "🔄 [userService] Submitting unban request for user:",
+        currentUser
+      );
+
+      // Si l'utilisateur est banni, utiliser l'email directement
+      if (currentUser?.isBanned) {
+        const response = await axios.post(`${API_URL}/unban-requests`, {
+          email: currentUser.email,
+          message: message,
+        });
+        return response.data;
+      }
+
+      // Sinon, utiliser le token normal
+      const response = await http.post("/unban-requests", {
+        message: message,
+      });
       return response.data;
     } catch (error: any) {
-      console.error(
-        "Erreur lors de l'envoi de la demande de débanissement:",
-        error
-      );
+      console.error("Error submitting unban request:", error);
       throw (
         error.response?.data || {
-          message: "Erreur lors de l'envoi de la demande de débanissement",
+          message: "Une erreur est survenue lors de l'envoi de votre demande",
         }
       );
     }

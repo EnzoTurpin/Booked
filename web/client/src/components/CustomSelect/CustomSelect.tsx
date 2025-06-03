@@ -40,6 +40,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   // Gérer l'ouverture/fermeture du dropdown
   const toggleDropdown = () => {
     if (!disabled) {
+      console.log("Toggle dropdown called, current state:", isOpen);
       setIsOpen(!isOpen);
     }
   };
@@ -130,6 +131,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     }
   };
 
+  console.log("Rendering CustomSelect, isOpen:", isOpen);
+
   return (
     <div
       className={`custom-select-container ${className}`}
@@ -158,28 +161,30 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       </div>
 
       {/* Dropdown avec les options */}
-      <div
-        className={`custom-select-dropdown ${isOpen ? "open" : ""}`}
-        ref={dropdownRef}
-        id={`${id || name}-dropdown`}
-        role="listbox"
-        aria-multiselectable="false"
-      >
-        {options.map((option) => (
-          <div
-            key={option.value}
-            className={`custom-select-option ${
-              value === option.value ? "selected" : ""
-            }`}
-            onClick={() => handleOptionSelect(option.value)}
-            data-value={option.value}
-            role="option"
-            aria-selected={value === option.value}
-          >
-            {option.label}
-          </div>
-        ))}
-      </div>
+      {isOpen && (
+        <div
+          className="custom-select-dropdown open"
+          ref={dropdownRef}
+          id={`${id || name}-dropdown`}
+          role="listbox"
+          aria-multiselectable="false"
+        >
+          {options.map((option) => (
+            <div
+              key={option.value}
+              className={`custom-select-option ${
+                value === option.value ? "selected" : ""
+              }`}
+              onClick={() => handleOptionSelect(option.value)}
+              data-value={option.value}
+              role="option"
+              aria-selected={value === option.value}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Input caché pour compatibilité avec les formulaires */}
       <input

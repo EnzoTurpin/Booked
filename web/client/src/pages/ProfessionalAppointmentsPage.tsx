@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "react-toastify";
-import appointmentService from "../services/appointment";
-import authService from "../services/auth";
-import axios from "axios";
+import axios from "axios"; // axios pour l'appel API
+import authService from "../services/auth"; // authService pour récupérer le token et l'utilisateur
 
 interface Appointment {
   _id: string;
@@ -15,94 +14,78 @@ interface Appointment {
     firstName: string;
     lastName: string;
   };
-  startTime: string;
-  endTime: string;
-  paymentAmount?: number;
-  notes?: string;
   clientId: {
+    // Ajouter clientId car nous allons le peupler pour le professionnel
     _id: string;
     firstName: string;
     lastName: string;
+    email: string;
+    phone?: string;
   };
+  startTime: string;
+  endTime: string;
+  notes?: string;
 }
 
-const MyAppointmentsPage: React.FC = () => {
+const ProfessionalAppointmentsPage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [currentUser, setCurrentUser] = useState(authService.getCurrentUser());
+  const user = authService.getCurrentUser();
 
-  // Initialize user state once on mount
   useEffect(() => {
-    setCurrentUser(authService.getCurrentUser());
-  }, []);
+    if (user && user.role === "professional") {
+      fetchProfessionalAppointments();
+    } else {
+      // Rediriger ou afficher un message d'erreur si l'utilisateur n'est pas un professionnel
+      setIsLoading(false);
+      toast.error("Accès refusé. Cette page est réservée aux professionnels.");
+      // Vous pourriez utiliser useHistory ou useNavigation pour rediriger
+    }
+  }, [user]);
 
-  const fetchAppointments = useCallback(async () => {
+  const fetchProfessionalAppointments = async () => {
     setIsLoading(true);
     try {
       const token = authService.getToken();
-      if (!currentUser || !token) {
-        console.log(
-          "⚠️ [MY_APPT_PAGE] User or token not available, skipping fetch.",
-          { user: currentUser, token: token ? "Available" : "Unavailable" }
-        );
+      if (!token) {
+        toast.error("Session expirée. Veuillez vous reconnecter.");
         setIsLoading(false);
         return;
       }
-
-      let data = [];
-
-      if (currentUser.role === "client") {
-        // Logique existante pour les clients
-        console.log("🔄 [MY_APPT_PAGE] Fetching appointments for client...");
-        data = await appointmentService.getUserAppointments();
-        console.log("✅ [MY_APPT_PAGE] Fetched client appointments:", data);
-      } else if (currentUser.role === "professional") {
-        // Nouvelle logique pour les professionnels
-        console.log(
-          "🔄 [MY_APPT_PAGE] Fetching appointments for professional..."
-        );
-        const response = await axios.get(
-          `http://localhost:5000/api/appointments/professional/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        console.log(
-          "✅ [MY_APPT_PAGE] Raw professional appointments data:",
-          response.data
-        );
-        // Filtrer pour n'afficher que les rendez-vous confirmés pour le professionnel
-        data = response.data.filter(
-          (appt: Appointment) => appt.status === "confirmed"
-        );
-        console.log(
-          "🔍 [MY_APPT_PAGE] Filtered confirmed professional appointments:",
-          data
-        );
-      }
-
-      setAppointments(data);
+      console.log(
+        "🔄 [PRO_APPT_PAGE] Appel à la route /api/appointments/professional/me"
+      );
+      // Appel à la nouvelle route serveur pour les rendez-vous du professionnel
+      const response = await axios.get(
+        `http://localhost:5000/api/appointments/professional/me`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("✅ [PRO_APPT_PAGE] Réponse du serveur:", response.data);
+      // Filtrer les rendez-vous pour n'afficher que ceux avec le statut 'confirmed'
+      const confirmedAppointments = response.data.filter(
+        (appt: Appointment) => appt.status === "confirmed"
+      );
+      console.log(
+        "🔍 [PRO_APPT_PAGE] Rendez-vous filtrés (confirmés):",
+        confirmedAppointments
+      );
+      setAppointments(confirmedAppointments);
     } catch (error) {
       console.error(
-        "❌ [MY_APPT_PAGE] Erreur lors du chargement des rendez-vous:",
+        "❌ [PRO_APPT_PAGE] Erreur lors du chargement des rendez-vous professionnels:",
         error
       );
       toast.error("Impossible de charger vos rendez-vous. Veuillez réessayer.");
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser]);
+  };
 
-  useEffect(() => {
-    if (currentUser) {
-      fetchAppointments();
-    } else {
-      setIsLoading(false);
-    }
-  }, [currentUser, fetchAppointments]);
-
+  // Fonctions utilitaires pour le formatage et le statut (copiées de MyAppointmentsPage pour l'instant)
   const getStatusClass = (status: Appointment["status"]) => {
     switch (status) {
       case "confirmed":
@@ -151,16 +134,7 @@ const MyAppointmentsPage: React.FC = () => {
     }
   };
 
-  const handleCancelAppointment = async (id: string) => {
-    try {
-      await appointmentService.cancelAppointment(id);
-      toast.success("Rendez-vous annulé avec succès");
-      fetchAppointments(); // Rafraîchir la liste
-    } catch (error) {
-      console.error("Erreur lors de l'annulation du rendez-vous:", error);
-      toast.error("Impossible d'annuler le rendez-vous. Veuillez réessayer.");
-    }
-  };
+  // Pas de bouton Annuler ici pour l'instant, si besoin on l'ajoutera plus tard.
 
   if (isLoading) {
     return (
@@ -173,23 +147,26 @@ const MyAppointmentsPage: React.FC = () => {
     );
   }
 
+  // Si l'utilisateur n'est pas un professionnel, afficher un message d'erreur
+  if (user?.role !== "professional") {
+    return (
+      <div className="text-center py-8 text-red-500">
+        Vous n'avez pas l'autorisation de voir cette page.
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="text-3xl font-bold mb-8 text-center text-brown">
-        Mes Rendez-vous
+        Mes Rendez-vous Confirmés
       </h1>
 
       {appointments.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-brown/80">
-            Vous n'avez pas encore de rendez-vous.
+            Vous n'avez pas encore de rendez-vous confirmés.
           </p>
-          <a
-            href="/booking"
-            className="mt-4 inline-block bg-sage text-brown px-6 py-2 rounded-lg hover:bg-sage-light transition-colors"
-          >
-            Prendre rendez-vous
-          </a>
         </div>
       ) : (
         <div className="space-y-6">
@@ -201,10 +178,10 @@ const MyAppointmentsPage: React.FC = () => {
               <div className="p-6">
                 <div className="flex justify-between items-start">
                   <div>
+                    {/* Afficher le nom du client pour le professionnel */}
                     <h2 className="text-xl font-bold text-brown">
-                      {currentUser?.role === "professional"
-                        ? `Rendez-vous avec ${appointment.clientId?.firstName} ${appointment.clientId?.lastName}`
-                        : `Rendez-vous avec ${appointment.professionalId?.firstName} ${appointment.professionalId?.lastName}`}
+                      Rendez-vous avec {appointment.clientId.firstName}{" "}
+                      {appointment.clientId.lastName}
                     </h2>
                   </div>
                   <div
@@ -236,17 +213,6 @@ const MyAppointmentsPage: React.FC = () => {
                     {appointment.endTime}
                   </span>
                 </div>
-
-                {appointment.status === "pending" && (
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      onClick={() => handleCancelAppointment(appointment._id)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                      Annuler le rendez-vous
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           ))}
@@ -256,4 +222,4 @@ const MyAppointmentsPage: React.FC = () => {
   );
 };
 
-export default MyAppointmentsPage;
+export default ProfessionalAppointmentsPage;

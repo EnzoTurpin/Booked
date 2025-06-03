@@ -56,50 +56,46 @@ const Header: React.FC = () => {
                   Accueil
                 </Link>
               </li>
-              <li>
-                <Link to="/services" className="hover:opacity-80">
-                  Services
-                </Link>
-              </li>
-              <li>
-                <Link to="/booking" className="hover:opacity-80">
-                  Réserver
-                </Link>
-              </li>
-
-              {!isLoading && (
+              {(!currentUser || currentUser.role === "client") && (
                 <>
-                  {currentUser ? (
-                    <>
-                      <li>
-                        <Link
-                          to="/my-appointments"
-                          className="hover:opacity-80"
-                        >
-                          Mes Rendez-vous
-                        </Link>
-                      </li>
-                      <li>
-                        <UserMenu user={currentUser} />
-                      </li>
-                    </>
-                  ) : (
-                    <>
-                      <li>
-                        <Link to="/login" className="hover:opacity-80">
-                          Connexion
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          to="/register"
-                          className="bg-beige text-brown px-4 py-2 rounded-lg font-medium hover:bg-offwhite transition-colors"
-                        >
-                          S'inscrire
-                        </Link>
-                      </li>
-                    </>
+                  <li>
+                    <Link to="/booking" className="hover:opacity-80">
+                      Réserver
+                    </Link>
+                  </li>
+                </>
+              )}
+              {currentUser ? (
+                <>
+                  {currentUser.role === "professional" && (
+                    <li>
+                      <Link
+                        to="/professional-dashboard"
+                        className="hover:opacity-80"
+                      >
+                        Dashboard Pro
+                      </Link>
+                    </li>
                   )}
+                  <li>
+                    <UserMenu user={currentUser} />
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link to="/login" className="hover:opacity-80">
+                      Connexion
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/register"
+                      className="bg-beige text-brown px-4 py-2 rounded-lg font-medium hover:bg-offwhite transition-colors"
+                    >
+                      S'inscrire
+                    </Link>
+                  </li>
                 </>
               )}
             </ul>

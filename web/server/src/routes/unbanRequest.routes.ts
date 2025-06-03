@@ -10,7 +10,7 @@ import { authenticateJWT, isAdmin } from "../middleware/auth.middleware";
 const router = express.Router();
 
 // POST /api/unban-requests - Créer une nouvelle demande (utilisateurs bannis)
-router.post("/", authenticateJWT, createUnbanRequest);
+router.post("/", createUnbanRequest);
 
 // GET /api/unban-requests - Récupérer toutes les demandes (admin uniquement)
 router.get("/", authenticateJWT, isAdmin, getAllUnbanRequests);

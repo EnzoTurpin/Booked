@@ -41,12 +41,6 @@ const HomePage: React.FC = () => {
                     "group-hover:translate-x-1 transition-transform duration-300",
                 })}
               </Link>
-              <Link
-                to="/services"
-                className="bg-brown text-offwhite font-bold py-4 px-8 rounded-xl border border-offwhite/20 backdrop-blur-sm transition duration-300 hover:bg-brown-light"
-              >
-                Voir nos services
-              </Link>
             </div>
           </div>
         </div>

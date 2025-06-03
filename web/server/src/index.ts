@@ -4,15 +4,16 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import appointmentRoutes from "./routes/appointment.routes";
 import userRoutes from "./routes/user.routes";
-import serviceRoutes from "./routes/service.routes";
 import authRoutes from "./routes/auth.routes";
 import contactRoutes from "./routes/contact.routes";
 import unbanRequestRoutes from "./routes/unbanRequest.routes";
+import professionalRoutes from "./routes/professional.routes";
 import connectDB from "./config/database";
 import path from "path";
 
 // Configuration
 dotenv.config();
+console.log("Valeur de process.env.JWT_SECRET :", process.env.JWT_SECRET);
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI =
@@ -28,10 +29,10 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // Routes
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/services", serviceRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/unban-requests", unbanRequestRoutes);
+app.use("/api/professional", professionalRoutes);
 
 // Connect to MongoDB
 connectDB()

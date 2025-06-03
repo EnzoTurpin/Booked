@@ -11,6 +11,7 @@ import {
   banUser,
   unbanUser,
   adminUpdateUser,
+  getProfessionals,
 } from "../controllers/user.controller";
 import { authenticateJWT, isAdmin } from "../middleware/auth.middleware";
 import { changePassword } from "../controllers/auth.controller";
@@ -34,6 +35,9 @@ router.put("/admin/:id", authenticateJWT, isAdmin, adminUpdateUser);
 // Regular routes
 // GET /api/users - Get all users
 router.get("/", getUsers);
+
+// Route pour récupérer tous les professionnels
+router.get("/professionals", authenticateJWT, getProfessionals);
 
 // GET /api/users/:id - Get user by ID
 router.get("/:id", getUserById);

@@ -2,143 +2,279 @@ import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import { fr } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
-import CustomSelect from "../components/CustomSelect";
-
-interface Service {
-  _id: string;
-  name: string;
-  description: string;
-  duration: number;
-  price: number;
-  professionalId: string;
-}
+import CustomSelect from "../components/CustomSelect/CustomSelect";
+import professionalService from "../services/professional";
+import { toast } from "react-toastify";
+import axios from "axios";
+import authService from "../services/auth";
 
 interface Professional {
   _id: string;
   firstName: string;
   lastName: string;
+  professionalId: string;
+}
+
+function generateTimeSlots(start: string, end: string, stepMinutes = 30) {
+  const slots = [];
+  let [hour, minute] = start.split(":").map(Number);
+  const [endHour, endMinute] = end.split(":").map(Number);
+  while (hour < endHour || (hour === endHour && minute <= endMinute)) {
+    slots.push(
+      `${hour.toString().padStart(2, "0")}:${minute
+        .toString()
+        .padStart(2, "0")}`
+    );
+    minute += stepMinutes;
+    if (minute >= 60) {
+      hour += 1;
+      minute = 0;
+    }
+  }
+  return slots;
+}
+
+// Fonction pour rendre la grille de créneaux horaires
+function renderTimeSlots(
+  availableTimes: string[],
+  selectedTime: string,
+  setSelectedTime: (t: string) => void,
+  start: string | undefined,
+  end: string | undefined
+) {
+  if (!start || !end || availableTimes.length === 0) {
+    return (
+      <div className="col-span-3 text-red-500 text-center">
+        Aucun créneau disponible ce jour
+      </div>
+    );
+  }
+
+  const allSlots = generateTimeSlots(start, end);
+
+  return allSlots.map((slot) => {
+    const isAvailable = availableTimes.includes(slot);
+    return (
+      <button
+        key={slot}
+        type="button"
+        className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors
+          ${
+            isAvailable
+              ? selectedTime === slot
+                ? "bg-sage text-white border-sage"
+                : "bg-white text-brown border-sage hover:bg-sage/20"
+              : "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed"
+          }
+        `}
+        disabled={!isAvailable}
+        onClick={() => isAvailable && setSelectedTime(slot)}
+      >
+        {slot}
+      </button>
+    );
+  });
 }
 
 const BookingPage: React.FC = () => {
-  const [selectedService, setSelectedService] = useState<string>("");
   const [selectedProfessional, setSelectedProfessional] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>("");
-  const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [workingHoursRange, setWorkingHoursRange] = useState<{
+    start: string | undefined;
+    end: string | undefined;
+  }>({ start: undefined, end: undefined });
 
   useEffect(() => {
-    // Ces fonctions seraient normalement un appel API réel
-    const fetchServices = async () => {
-      try {
-        // Dans un environnement réel, vous utiliseriez:
-        // const response = await axios.get('http://localhost:5000/api/services');
-        // setServices(response.data);
-
-        // Données simulées pour l'exemple
-        setServices([
-          {
-            _id: "1",
-            name: "Coupe homme",
-            description: "Coupe et style pour homme",
-            duration: 30,
-            price: 25,
-            professionalId: "1",
-          },
-          {
-            _id: "2",
-            name: "Coupe femme",
-            description: "Coupe et brushing pour femme",
-            duration: 60,
-            price: 45,
-            professionalId: "1",
-          },
-          {
-            _id: "3",
-            name: "Coloration",
-            description: "Coloration complète",
-            duration: 90,
-            price: 70,
-            professionalId: "2",
-          },
-          {
-            _id: "4",
-            name: "Coupe enfant",
-            description: "Coupe pour enfant",
-            duration: 20,
-            price: 15,
-            professionalId: "2",
-          },
-        ]);
-      } catch (error) {
-        console.error("Erreur lors du chargement des services:", error);
-      }
-    };
-
     const fetchProfessionals = async () => {
+      console.log("Attempting to fetch professionals...");
       try {
-        // Dans un environnement réel, vous utiliseriez:
-        // const response = await axios.get('http://localhost:5000/api/users?role=professional');
-        // setProfessionals(response.data);
-
-        // Données simulées pour l'exemple
-        setProfessionals([
-          { _id: "1", firstName: "Sophie", lastName: "Martin" },
-          { _id: "2", firstName: "Thomas", lastName: "Dubois" },
-        ]);
+        const data = await professionalService.getAllProfessionals();
+        console.log("Fetched professionals data:", data);
+        setProfessionals(data);
+        console.log("Professionals state after setting:", data);
       } catch (error) {
         console.error("Erreur lors du chargement des professionnels:", error);
+        if (axios.isAxiosError(error)) {
+          console.error("Axios error details:", {
+            status: error.response?.status,
+            data: error.response?.data,
+            headers: error.response?.headers,
+          });
+        }
+        toast.error("Impossible de charger la liste des professionnels");
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchServices();
     fetchProfessionals();
   }, []);
 
   useEffect(() => {
-    if (selectedDate) {
-      // Générer des horaires disponibles (9h à 17h avec des incréments de 30 minutes)
-      const times = [];
-      const startHour = 9;
-      const endHour = 17;
-      for (let hour = startHour; hour <= endHour; hour++) {
-        times.push(`${hour}:00`);
-        if (hour < endHour) {
-          times.push(`${hour}:30`);
-        }
+    const fetchAvailableTimes = async () => {
+      setAvailableTimes([]);
+      setWorkingHoursRange({ start: undefined, end: undefined });
+
+      if (!selectedProfessional || !selectedDate) {
+        return;
       }
-      setAvailableTimes(times);
-    }
-  }, [selectedDate]);
+
+      const dayOfWeek = selectedDate.getDay();
+      const dateStr = selectedDate.toISOString().split("T")[0]; // Format YYYY-MM-DD
+
+      try {
+        // 1. Récupérer les horaires de travail et les rendez-vous pris pour ce jour
+        const { data } = await axios.get(
+          `http://localhost:5000/api/professional/${selectedProfessional}/working-hours?day=${dayOfWeek}&date=${dateStr}`,
+          { headers: { Authorization: `Bearer ${authService.getToken()}` } }
+        );
+
+        if (!data.isOpen) {
+          // Si le professionnel ne travaille pas ce jour-là
+          setAvailableTimes([]);
+          setWorkingHoursRange({ start: undefined, end: undefined });
+          return;
+        }
+
+        // Mettre à jour l'état avec les horaires de travail du jour
+        setWorkingHoursRange({ start: data.start, end: data.end });
+
+        // 2. Générer tous les créneaux possibles pour la journée travaillée
+        const allSlots = generateTimeSlots(data.start, data.end);
+
+        // 3. Extraire les heures de début des rendez-vous pris
+        const takenTimes = data.appointments.map((a: any) => a.startTime);
+
+        // 4. Filtrer les créneaux pour n'inclure que ceux qui ne sont pas pris
+        setAvailableTimes(
+          allSlots.filter((slot) => !takenTimes.includes(slot))
+        );
+      } catch (error) {
+        console.error(
+          "Erreur lors de la récupération des créneaux disponibles:",
+          error
+        );
+        setAvailableTimes([]);
+        setWorkingHoursRange({ start: undefined, end: undefined });
+        toast.error("Erreur lors du chargement des créneaux disponibles.");
+      }
+    };
+    fetchAvailableTimes();
+  }, [selectedProfessional, selectedDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Ici, vous feriez un appel API réel pour créer un rendez-vous
-    try {
-      // const response = await axios.post('http://localhost:5000/api/appointments', {
-      //   userId: 'user_id_placeholder', // Normalement issu de votre système d'authentification
-      //   professionalId: selectedProfessional,
-      //   serviceId: selectedService,
-      //   date: new Date(`${format(selectedDate as Date, 'yyyy-MM-dd')}T${selectedTime}`),
-      //   status: 'pending',
-      //   notes: ''
-      // });
+    console.log("handleSubmit called.");
+    console.log("Value of selectedProfessional:", selectedProfessional);
 
-      alert("Rendez-vous réservé avec succès!");
-      // Réinitialiser le formulaire
-      setSelectedService("");
+    if (!selectedProfessional || !selectedDate || !selectedTime) {
+      toast.error("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    try {
+      const dateStr = selectedDate.toISOString().split("T")[0];
+      const userId = authService.getCurrentUser()?._id;
+      const token = authService.getToken();
+
+      if (!userId) {
+        toast.error("Vous devez être connecté pour prendre rendez-vous.");
+        return;
+      }
+
+      if (!token) {
+        toast.error("Session expirée. Veuillez vous reconnecter.");
+        return;
+      }
+
+      // Trouver le professionnel sélectionné pour obtenir son professionalId
+      const selectedProf = professionals.find(
+        (p) => p._id === selectedProfessional
+      );
+      if (!selectedProf) {
+        toast.error("Le professionnel sélectionné n'existe pas.");
+        return;
+      }
+
+      // Calculer l'heure de fin (30 minutes après l'heure de début)
+      const [hours, minutes] = selectedTime.split(":").map(Number);
+      const endTimeDate = new Date();
+      endTimeDate.setHours(hours);
+      endTimeDate.setMinutes(minutes + 30);
+      const endTime = `${endTimeDate
+        .getHours()
+        .toString()
+        .padStart(2, "0")}:${endTimeDate
+        .getMinutes()
+        .toString()
+        .padStart(2, "0")}`;
+
+      console.log("Token envoyé:", token);
+      console.log("Données envoyées:", {
+        clientId: userId,
+        professionalId: selectedProf._id,
+        date: dateStr,
+        startTime: selectedTime,
+        endTime: endTime,
+        notes: "",
+        status: "scheduled",
+      });
+
+      const response = await axios.post(
+        "http://localhost:5000/api/appointments",
+        {
+          clientId: userId,
+          professionalId: selectedProf._id,
+          date: dateStr,
+          startTime: selectedTime,
+          endTime: endTime,
+          notes: "",
+          status: "scheduled",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Réponse du serveur:", response.data);
+      toast.success("Rendez-vous réservé avec succès!");
       setSelectedProfessional("");
       setSelectedDate(null);
       setSelectedTime("");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de la création du rendez-vous:", error);
-      alert(
-        "Une erreur est survenue lors de la réservation. Veuillez réessayer."
+      console.error("Détails de l'erreur:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+      });
+      toast.error(
+        error.response?.data?.message ||
+          "Une erreur est survenue lors de la réservation"
       );
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sage mx-auto"></div>
+          <p className="mt-4 text-brown/80">Chargement des professionnels...</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log("Rendering BookingPage. Professionals state:", professionals);
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -148,29 +284,6 @@ const BookingPage: React.FC = () => {
 
       <div className="bg-offwhite rounded-lg shadow-md p-8 border border-sage/20">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Sélection du service */}
-          <div>
-            <label
-              htmlFor="service"
-              className="block text-brown font-semibold mb-2"
-            >
-              Service
-            </label>
-            <CustomSelect
-              id="service"
-              name="service"
-              value={selectedService}
-              onChange={setSelectedService}
-              options={services.map((service) => ({
-                value: service._id,
-                label: `${service.name} - ${service.duration} min - ${service.price} €`,
-              }))}
-              placeholder="Sélectionnez un service"
-              required
-              className="w-full"
-            />
-          </div>
-
           {/* Sélection du professionnel */}
           <div>
             <label
@@ -232,35 +345,26 @@ const BookingPage: React.FC = () => {
               >
                 Heure
               </label>
-              <CustomSelect
-                id="time"
-                name="time"
-                value={selectedTime}
-                onChange={setSelectedTime}
-                options={availableTimes.map((time) => ({
-                  value: time,
-                  label: time,
-                }))}
-                placeholder="Sélectionnez une heure"
-                required
-                className="w-full"
-              />
+              <div className="grid grid-cols-3 gap-2">
+                {renderTimeSlots(
+                  availableTimes,
+                  selectedTime,
+                  setSelectedTime,
+                  workingHoursRange.start,
+                  workingHoursRange.end
+                )}
+              </div>
             </div>
           )}
 
-          {/* Bouton de soumission */}
-          <button
-            type="submit"
-            className="w-full bg-sage hover:bg-sage-light text-brown font-bold py-3 px-6 rounded-lg transition duration-300"
-            disabled={
-              !selectedService ||
-              !selectedProfessional ||
-              !selectedDate ||
-              !selectedTime
-            }
-          >
-            Confirmer la réservation
-          </button>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="bg-sage text-brown px-6 py-2 rounded-lg hover:bg-sage-light transition-colors"
+            >
+              Réserver
+            </button>
+          </div>
         </form>
       </div>
     </div>

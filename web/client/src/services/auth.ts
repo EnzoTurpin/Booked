@@ -96,24 +96,27 @@ const authService = {
     } catch (error: any) {
       console.error("Erreur lors de la connexion:", error);
 
-      // Si l'utilisateur est banni, mettre à jour les informations dans le localStorage
+      // Si l'utilisateur est banni
       if (error.response?.status === 403 && error.response.data?.isBanned) {
-        // Créer un utilisateur banni avec les informations disponibles
-        const bannedUserEmail = credentials.email;
+        // Stocker les informations de l'utilisateur banni
         const bannedUser = {
-          _id: "banned", // ID temporaire
-          email: bannedUserEmail,
-          firstName: "",
-          lastName: "",
-          phone: "",
-          role: "user",
+          _id: error.response.data.user?._id || "banned",
+          email: credentials.email,
+          firstName: error.response.data.user?.firstName || "",
+          lastName: error.response.data.user?.lastName || "",
+          phone: error.response.data.user?.phone || "",
+          role: error.response.data.user?.role || "user",
           isEmailVerified: true,
           isBanned: true,
         };
-        localStorage.setItem("user", JSON.stringify(bannedUser));
 
-        // Rediriger vers la page "Banni"
+        // Stocker l'utilisateur banni dans le localStorage
+        localStorage.setItem("user", JSON.stringify(bannedUser));
+        localStorage.setItem("token", "banned");
+
+        // Rediriger vers la page banni
         window.location.href = "/banned";
+        return { token: "banned", user: bannedUser };
       }
 
       throw (
@@ -176,8 +179,23 @@ const authService = {
   // Récupérer les informations de l'utilisateur connecté
   getCurrentUser: (): IUser | null => {
     const userString = localStorage.getItem("user");
+    console.log(
+      "🔄 [authService] Getting current user from localStorage:",
+      userString
+    );
+
     if (userString) {
-      return JSON.parse(userString);
+      try {
+        const user = JSON.parse(userString);
+        console.log("🔄 [authService] Parsed user:", user);
+        return user;
+      } catch (error) {
+        console.error(
+          "🔄 [authService] Error parsing user from localStorage:",
+          error
+        );
+        return null;
+      }
     }
     return null;
   },
@@ -305,11 +323,26 @@ const authService = {
   // Vérifier l'état de l'authentification actuel
   checkAuthStatus: async (): Promise<IUser> => {
     try {
+      console.log("🔄 [authService] Checking auth status");
       const response = await http.get("/auth/check");
+      console.log("🔄 [authService] Auth check response:", response.data);
+
+      // Si l'utilisateur est banni, ne pas mettre à jour le localStorage
+      if (response.data.user.isBanned) {
+        console.log("🔄 [authService] User is banned");
+        return response.data.user;
+      }
+
       // Mettre à jour les données utilisateur dans le localStorage
       localStorage.setItem("user", JSON.stringify(response.data.user));
       return response.data.user;
     } catch (error: any) {
+      console.error("🔄 [authService] Auth check error:", error);
+      // Si l'utilisateur est banni, retourner les informations du localStorage
+      const currentUser = authService.getCurrentUser();
+      if (currentUser?.isBanned) {
+        return currentUser;
+      }
       authService.logout();
       throw error.response?.data || { message: "Non authentifié" };
     }

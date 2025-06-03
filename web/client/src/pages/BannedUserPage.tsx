@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../services/auth";
 import userService from "../services/user";
@@ -8,15 +8,46 @@ const BannedUserPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const currentUser = authService.getCurrentUser();
+  useEffect(() => {
+    const checkBanStatus = async () => {
+      try {
+        setIsLoading(true);
+        const currentUser = authService.getCurrentUser();
+        console.log("🔄 [BannedUserPage] Current user:", currentUser);
 
-  // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
-  if (!currentUser) {
-    navigate("/login");
-    return null;
-  }
+        // Si l'utilisateur n'est pas banni, rediriger vers la page d'accueil
+        if (currentUser && !currentUser.isBanned) {
+          console.log(
+            "🔄 [BannedUserPage] User is not banned, redirecting to home"
+          );
+          navigate("/");
+          return;
+        }
+
+        // Si l'utilisateur n'est pas connecté et n'est pas banni, rediriger vers la page de connexion
+        if (!currentUser) {
+          console.log(
+            "🔄 [BannedUserPage] No user found, redirecting to login"
+          );
+          navigate("/login");
+          return;
+        }
+
+        // Si on arrive ici, l'utilisateur est banni, on peut afficher la page
+        console.log("🔄 [BannedUserPage] User is banned, showing banned page");
+      } catch (error) {
+        console.error("🔄 [BannedUserPage] Error in checkBanStatus:", error);
+        navigate("/login");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkBanStatus();
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +68,7 @@ const BannedUserPage: React.FC = () => {
       );
       setMessage("");
     } catch (err: any) {
+      console.error("Error submitting unban request:", err);
       setError(
         err.message ||
           "Une erreur est survenue lors de l'envoi de votre demande"
@@ -47,10 +79,21 @@ const BannedUserPage: React.FC = () => {
   };
 
   const handleLogout = () => {
+    console.log("🔄 [BannedUserPage] Logging out");
     authService.logout();
     navigate("/login");
-    window.location.reload();
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -143,7 +186,7 @@ const BannedUserPage: React.FC = () => {
       <div className="text-center">
         <button
           onClick={handleLogout}
-          className="text-gray-600 hover:text-gray-800 underline"
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
         >
           Se déconnecter
         </button>

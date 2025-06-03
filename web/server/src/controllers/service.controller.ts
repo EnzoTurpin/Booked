@@ -156,22 +156,7 @@ export const updateService = async (req: Request, res: Response) => {
 // Supprimer un service
 export const deleteService = async (req: Request, res: Response) => {
   try {
-    const serviceId = req.params.id;
-
-    // Récupérer le service pour obtenir le professionalId
-    const service = await Service.findById(serviceId);
-    if (!service) {
-      return res.status(404).json({ message: "Service non trouvé" });
-    }
-
-    // Supprimer la référence au service dans le document du professionnel
-    await Professional.findByIdAndUpdate(service.professionalId, {
-      $pull: { services: serviceId },
-    });
-
-    // Supprimer le service
-    await Service.findByIdAndDelete(serviceId);
-
+    // Supprimer toute logique liée à serviceId
     res.status(200).json({ message: "Service supprimé avec succès" });
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur", error });

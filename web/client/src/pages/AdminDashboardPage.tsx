@@ -546,7 +546,7 @@ const AdminDashboardPage: React.FC = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody>
                     {unbanRequests.map((request) => (
                       <tr key={request._id}>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -595,14 +595,14 @@ const AdminDashboardPage: React.FC = () => {
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           {request.status === "pending" && (
                             <>
                               <button
                                 onClick={() =>
                                   handleApproveRequest(request._id)
                                 }
-                                className="text-green-600 hover:text-green-900 bg-green-100 hover:bg-green-200 px-2 py-1 rounded-md"
+                                className="text-green-600 hover:text-green-900 bg-green-100 hover:bg-green-200 px-2 py-1 rounded-md mr-2"
                               >
                                 Approuver
                               </button>

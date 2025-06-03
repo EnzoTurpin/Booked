@@ -6,6 +6,22 @@ import {
   getProfileImageUrl,
   deleteProfileImage,
 } from "../middleware/upload.middleware";
+import Professional from "../models/Professional";
+import mongoose from "mongoose";
+
+interface UserObject {
+  _id: mongoose.Types.ObjectId;
+  firstName: string;
+  lastName: string;
+  [key: string]: any;
+}
+
+interface ProfessionalObject {
+  _id: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  profession?: string;
+  bio?: string;
+}
 
 // Get all users
 export const getUsers = async (req: Request, res: Response) => {
@@ -406,5 +422,38 @@ export const adminUpdateUser = async (req: Request, res: Response) => {
     res.status(200).json(updatedUser);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
+  }
+};
+
+// Récupérer tous les professionnels
+export const getProfessionals = async (req: Request, res: Response) => {
+  try {
+    console.log(
+      "🔄 [USER CTRL] Début de récupération des professionnels (depuis User collection)"
+    );
+
+    // Récupérer les utilisateurs marqués comme professionnels et non bannis
+    // et sélectionner uniquement les champs nécessaires pour le sélecteur (ID, prénom, nom)
+    const professionals = await User.find({
+      role: "professional",
+      isBanned: false,
+    })
+      .select("_id firstName lastName") // Sélectionner les champs nécessaires de l'utilisateur
+      .sort({ lastName: 1, firstName: 1 }); // Trier par nom puis prénom
+
+    console.log(
+      `✅ [USER CTRL] ${professionals.length} professionnels trouvés (depuis User collection)`
+    );
+    // Les utilisateurs professionnels sont déjà le résultat final si le profil est dans User
+    res.json(professionals);
+  } catch (error) {
+    console.error(
+      "❌ [USER CTRL] Erreur lors de la récupération des professionnels:",
+      error
+    );
+    res.status(500).json({
+      message: "Erreur lors de la récupération des professionnels",
+      error: error instanceof Error ? error.message : "Erreur inconnue",
+    });
   }
 };

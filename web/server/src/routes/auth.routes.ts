@@ -4,14 +4,10 @@ import {
   checkAuth,
   forgotPassword,
   resetPassword,
-  register,
 } from "../controllers/auth.controller";
 import { authenticateJWT } from "../middleware/auth.middleware";
 
 const router = express.Router();
-
-// POST /api/auth/register - Créer un compte
-router.post("/register", register);
 
 // POST /api/auth/login - Se connecter
 router.post("/login", login);

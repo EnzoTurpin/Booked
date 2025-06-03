@@ -31,6 +31,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   const checkAuth = async () => {
+    const user = authService.getCurrentUser();
+
+    // Si l'utilisateur est banni, on le considère comme connecté pour /banned
+    if (user && user.isBanned) {
+      setUser(user);
+      setIsAuthenticated(true);
+      setLoading(false);
+      return;
+    }
+
     const tokenExists = authService.isLoggedIn();
     if (tokenExists) {
       try {

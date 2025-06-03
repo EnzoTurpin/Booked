@@ -196,7 +196,31 @@ export const sendPasswordResetEmail = async (
   }
 };
 
+export const sendBanEmail = async (userEmail: string, reason: string) => {
+  const mailOptions = {
+    from: process.env.SMTP_FROM,
+    to: userEmail,
+    subject: "Votre compte a été banni",
+    html: `
+      <h1>Notification de bannissement</h1>
+      <p>Cher utilisateur,</p>
+      <p>Votre compte a été banni de notre plateforme pour la raison suivante :</p>
+      <p><strong>${reason}</strong></p>
+      <p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre support.</p>
+      <p>Cordialement,<br>L'équipe Booked</p>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("Error sending ban email:", error);
+    throw new Error("Erreur lors de l'envoi de l'email de bannissement");
+  }
+};
+
 export default {
   sendVerificationEmail,
   sendPasswordResetEmail,
+  sendBanEmail,
 };
